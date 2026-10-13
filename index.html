@@ -2,119 +2,62 @@
 <html lang="uz">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2456d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ruscha">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Rus tili — so'zlar</title>
 <style>
 :root{--bg:#f6f5f1;--card:#fff;--tx:#1d1d1b;--mut:#6b6a66;--ac:#2456d6;--bd:#e3e1da}
 @media(prefers-color-scheme:dark){:root{--bg:#141414;--card:#1f1f1e;--tx:#f0efea;--mut:#9b9a94;--ac:#6d93ff;--bd:#333}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
-.wrap{max-width:520px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:8px 0 16px}
-.cat{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;font-size:17px;color:var(--tx);text-align:left;cursor:pointer}
-.cat small{color:var(--mut)}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
-button{font:inherit;cursor:pointer}
-.ghost{background:none;border:none;color:var(--ac);font-size:16px;padding:8px 0}
-.count{color:var(--mut);font-size:15px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:28px 20px;text-align:center}
-.ru{font-size:34px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
-.uz{font-size:22px;color:var(--ac);margin-top:10px;min-height:30px}
-.hide .uz,.hide .sub{visibility:hidden}
-.hide .card{cursor:pointer}
-hr{border:none;border-top:1px solid var(--bd);margin:22px 0}
-.sr{font-size:20px;line-height:1.35}
-.su{font-size:16px;color:var(--mut);margin-top:6px}
-.play{margin-top:14px;background:none;border:1px solid var(--bd);color:var(--tx);border-radius:999px;padding:8px 16px;font-size:15px}
-.nav{display:flex;gap:10px;margin-top:14px}
-.nav button{flex:1;padding:16px;font-size:17px;border-radius:14px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
-.nav .main{background:var(--ac);color:#fff;border-color:var(--ac)}
-.opts{display:flex;gap:10px;margin-top:14px}
-.opts button{flex:1;padding:12px;font-size:15px;border-radius:12px;border:1px solid var(--bd);background:none;color:var(--tx)}
-.opts .on{background:var(--ac);color:#fff;border-color:var(--ac)}
-.note{color:var(--mut);font-size:13px;margin-top:14px;text-align:center}
-.hidden{display:none}
-.hdr{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5;background:var(--bg);margin:-16px -16px 16px;padding:14px 16px;border-bottom:1px solid var(--bd)}
-.logo{width:40px;height:40px;border-radius:12px;background:var(--ac);color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center}
-.ht b{display:block;font-size:18px}
-.ht span{font-size:13px;color:var(--mut)}
-.hero{padding:10px 2px 18px}
-.hero h1{font-size:28px;margin:0 0 4px}
-.hero p{margin:0;color:var(--mut);font-size:15px}
-.stats{display:flex;gap:10px;margin-bottom:18px}
-.stat{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;text-align:center}
-.stat b{display:block;font-size:22px}
-.stat span{font-size:12px;color:var(--mut)}
-.cont{width:100%;display:flex;align-items:center;gap:12px;background:var(--ac);color:#fff;border:none;border-radius:16px;padding:16px;margin-bottom:22px;text-align:left}
-.cont .t{flex:1}
-.cont small{display:block;opacity:.8;font-size:13px;margin-bottom:2px}
-.cont b{font-size:17px}
-.sec{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin:0 2px 10px}
-.cat{gap:14px}
-.cat .ic{font-size:28px;width:48px;height:48px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none}
-.cat .mid{flex:1;min-width:0}
-.cat .nm{font-weight:600;font-size:17px}
-.cat .nm i{font-style:normal;color:var(--mut);font-weight:400;margin-left:6px}
-.bar{height:5px;background:var(--bd);border-radius:9px;margin-top:9px;overflow:hidden}
-.bar div{height:100%;background:var(--ac);border-radius:9px}
-.cat small{display:block;margin-top:6px;font-size:13px}
-.soon{border:1px dashed var(--bd);border-radius:14px;padding:16px;text-align:center;color:var(--mut);font-size:14px}
-.hdr{display:block;font-size:20px;font-weight:700;position:sticky;top:0;z-index:5;background:var(--bg);margin:-16px -16px 16px;padding:16px;border-bottom:1px solid var(--bd)}
-#cats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start}
-#cats .cat{display:block;margin:0;padding:16px 14px}
-#cats .cat .ic{margin-bottom:12px}
-#cats .cat .nm i{display:block;margin:2px 0 0}
 html,body{height:100%}
-.wrap{height:100%}
-#study:not(.hidden){display:flex;flex-direction:column;height:calc(100dvh - 32px)}
-#study .card{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;justify-content:safe center;align-items:center}
-#study .top,#study .nav,#study .opts,#study .note{flex:none}
-#home{height:auto}
-/* --- telefon uchun ixcham o'lchamlar --- */
-.wrap{padding:12px}
-.hdr{font-size:17px;margin:-12px -12px 12px;padding:12px}
-#cats{gap:10px}
-#cats .cat{padding:12px}
-#cats .cat .ic{width:38px;height:38px;font-size:22px;margin-bottom:8px}
-#cats .cat .nm{font-size:15px}
-#cats .cat .nm i{font-size:13px}
-.bar{height:4px;margin-top:8px}
-#study:not(.hidden){height:calc(100dvh - 24px)}
-.top{margin-bottom:8px}
-.ghost{font-size:14px;padding:6px 0}
-.count{font-size:13px}
-.card{padding:16px 14px;border-radius:14px}
-.ru{font-size:26px}
-.uz{font-size:17px;margin-top:6px;min-height:22px}
-hr{margin:14px 0;width:100%}
-.sr{font-size:16px}
-.su{font-size:14px;margin-top:4px}
-.play{margin-top:10px;padding:6px 12px;font-size:13px}
-.nav{gap:8px;margin-top:10px}
-.nav button{padding:12px;font-size:15px;border-radius:12px}
-.opts{gap:8px;margin-top:8px}
-.opts button{padding:9px;font-size:13px;border-radius:10px}
-.note{font-size:11px;margin-top:8px}
-#study:not(.hidden){height:auto}
-#study .card{flex:none;height:clamp(240px,42dvh,320px)}
-.hide .uz,.hide .su{visibility:hidden}
-.row,.row2{display:flex;gap:10px;flex:none}
-.row{margin-top:12px}
-.row2{margin-top:10px}
-.row button{flex:1;height:64px;font-size:18px;font-weight:600;border-radius:16px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
-.row .main{background:var(--ac);color:#fff;border-color:var(--ac)}
-.row2 button{flex:1;padding:12px;font-size:14px;border-radius:12px;border:1px solid var(--bd);background:none;color:var(--tx)}
-.row2 .on{background:var(--ac);color:#fff;border-color:var(--ac)}
-.sr{font-size:17px}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+button{font:inherit;cursor:pointer;color:var(--tx)}
+.wrap{max-width:520px;margin:0 auto;padding:12px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.hidden{display:none!important}
+
+/* --- Bosh sahifa --- */
+.hdr{position:sticky;top:0;z-index:5;background:var(--bg);margin:-12px -12px 12px;padding:12px;border-bottom:1px solid var(--bd);font-size:17px;font-weight:700}
+.cont{width:100%;display:flex;align-items:center;gap:12px;background:var(--ac);color:#fff;border:none;border-radius:14px;padding:14px 16px;margin-bottom:12px;text-align:left}
+.cont span{flex:1}
+.cont small{display:block;opacity:.8;font-size:12px;margin-bottom:2px}
+.cont b{font-size:16px}
+#cats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-items:start}
+.cat{display:block;width:100%;margin:0;padding:12px;background:var(--card);border:1px solid var(--bd);border-radius:14px;text-align:left}
+.cat .ic{width:38px;height:38px;margin-bottom:8px;border-radius:12px;background:var(--bg);font-size:22px;display:flex;align-items:center;justify-content:center}
+.cat .nm{font-weight:600;font-size:15px}
+.cat .nm i{display:block;margin-top:2px;font-style:normal;font-weight:400;font-size:13px;color:var(--mut)}
+.bar{height:4px;margin-top:8px;background:var(--bd);border-radius:9px;overflow:hidden}
+.bar div{height:100%;background:var(--ac);border-radius:9px}
+.msg{grid-column:1/-1;color:var(--mut);text-align:center;padding:24px 0}
+
+/* --- O'rganish sahifasi --- */
+#study{display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.ghost{background:none;border:none;color:var(--ac);font-size:14px;padding:6px 0}
+.count{color:var(--mut);font-size:13px}
+.speed{background:none;border:1px solid var(--bd);border-radius:999px;padding:3px 10px;font-size:13px}
+.card{height:clamp(220px,36dvh,280px);overflow-y:auto;display:flex;flex-direction:column;justify-content:safe center;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 14px;text-align:center}
+.ru{font-size:26px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.uz{font-size:17px;color:var(--ac);margin-top:6px;min-height:22px}
+hr{width:100%;margin:14px 0;border:none;border-top:1px solid var(--bd)}
+.sr{font-size:17px;line-height:1.35}
 .su{font-size:14px;color:var(--mut);margin-top:6px}
-.row .pv{flex:none;width:58px;font-size:22px}
-#study .card{height:clamp(220px,36dvh,280px)}
-.listen{flex:none;width:100%;height:64px;margin-top:12px;font-size:19px;font-weight:600;border-radius:16px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
-.row .pv{width:auto}
-.row{margin-top:10px}
-.row button{height:58px;font-size:17px}
-.hb{flex:none;width:100%;margin-top:10px;padding:11px;font-size:14px;border-radius:12px;border:1px solid var(--bd);background:none;color:var(--tx)}
+.hide .uz,.hide .su{visibility:hidden}
+.hide .card{cursor:pointer}
+.listen{width:100%;height:64px;margin-top:12px;font-size:19px;font-weight:600;border-radius:16px;border:1px solid var(--bd);background:var(--card)}
+.listen.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.row{display:flex;gap:10px;margin-top:10px}
+.row button{flex:1;height:58px;font-size:17px;font-weight:600;border-radius:16px;border:1px solid var(--bd);background:var(--card)}
+.row .pw{flex:none;width:58px;font-size:22px}
+.row .main{background:var(--ac);color:#fff;border-color:var(--ac)}
+.hb{width:100%;margin-top:10px;padding:11px;font-size:14px;border-radius:12px;border:1px solid var(--bd);background:none}
 .hb.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.note{color:var(--mut);font-size:11px;margin-top:8px;text-align:center}
 </style>
 </head>
 <body>
@@ -122,13 +65,15 @@ hr{margin:14px 0;width:100%}
 
 <div id="home">
   <header class="hdr">Mavzular</header>
-  <div id="cats"></div>
+  <button class="cont hidden" id="cont"><span><small>Davom etish</small><b id="contT"></b></span>→</button>
+  <div id="cats"><div class="msg">Yuklanmoqda…</div></div>
 </div>
 
 <div id="study" class="hidden">
   <div class="top">
     <button class="ghost" id="back">← Mavzular</button>
     <span class="count" id="count"></span>
+    <button class="speed" id="speed"></button>
   </div>
   <div class="card" id="card">
     <div class="ru" id="ru"></div>
@@ -137,140 +82,213 @@ hr{margin:14px 0;width:100%}
     <div class="sr" id="sr"></div>
     <div class="su" id="su"></div>
   </div>
-  <button id="pw" class="listen">🔊 Eshitish</button>
+  <button id="auto" class="listen">🎧 Tinglash</button>
   <div class="row">
+    <button id="pw" class="pw" aria-label="So'zni eshitish">🔊</button>
     <button id="prev">← Oldingi</button>
     <button id="next" class="main">Keyingi →</button>
   </div>
   <button id="hideBtn" class="hb">👁 Tarjimani yashirish</button>
-  <div class="note" id="vnote"></div>
+  <div class="note" id="note"></div>
 </div>
 
 </div>
 
 <script>
-/* ====== YANGI MAVZU QO'SHISH: CATS ga yangi obyekt qo'shing ======
-   items: [so'z_rus, tarjima_uz, gap_rus, gap_uz] */
-const CATS = [
-  {icon:"👨‍👩‍👧‍👦", uz:"Oila", ru:"Родня", items:[
-    ["члены семьи","oila a'zolari","Я люблю всех членов семьи.","Men oilamning barcha a'zolarini yaxshi ko'raman."],
-    ["папа, отец","dada, ota","Мой папа работает врачом.","Dadam shifokor bo'lib ishlaydi."],
-    ["мама, мать","oyi, ona","Моя мама хорошо готовит.","Oyim yaxshi ovqat pishiradi."],
-    ["брат","aka / uka","У меня один брат.","Mening bitta akam (ukam) bor."],
-    ["сестра","opa / singil","Моя сестра учится в школе.","Singlim maktabda o'qiydi."],
-    ["бабушка / дедушка","buvi / bobo","Бабушка печёт пирожки.","Buvim pirog pishiryapti."],
-    ["дядя","amaki / tog'a","Мой дядя живёт в Ташкенте.","Amakim Toshkentda yashaydi."],
-    ["тётя","amma / xola","Тётя приехала в гости.","Xolam mehmonga keldi."],
-    ["двоюродный брат","amakivachcha / xolavachcha (aka-uka)","Мой двоюродный брат играет в футбол.","Amakivachcha akam futbol o'ynaydi."],
-    ["двоюродная сестра","amakivachcha / xolavachcha (opa-singil)","Моя двоюродная сестра живёт в Самарканде.","Amakivachcha opam Samarqandda yashaydi."],
-    ["племянник / племянница","jiyan (o'g'il / qiz)","Мой племянник ещё маленький.","Jiyanim hali kichkina."],
-    ["внук / внучка","nevara (o'g'il / qiz)","Бабушка любит внуков.","Buvi nevaralarini yaxshi ko'radi."],
-    ["муж / жена","er / xotin","Её муж работает инженером.","Uning eri muhandis bo'lib ishlaydi."],
-    ["свёкор / свекровь","qaynota / qaynona (erning ota-onasi)","Свекровь живёт с нами.","Qaynonam biz bilan yashaydi."],
-    ["тесть / тёща","qaynota / qaynona (xotinning ota-onasi)","Тёща хорошо готовит плов.","Qaynonam palovni yaxshi pishiradi."],
-    ["жених / невеста","kuyov / kelin (to'y oldidan)","Жених и невеста выбирают кольца.","Kuyov va kelin uzuk tanlayapti."],
-    ["сноха / невестка","kelin (oilaning kelini)","Невестка помогает по дому.","Kelin uy ishlarida yordam beradi."],
-    ["зять","kuyov (qizning eri)","Мой зять хороший человек.","Kuyovim yaxshi inson."],
-    ["шурин / свояченица","xotinning aka-ukasi / opa-singlisi","Мой шурин живёт в Бухаре.","Xotinimning akasi Buxoroda yashaydi."],
-    ["деверь / золовка","erning aka-ukasi / opa-singlisi","Золовка пришла к нам в гости.","Erimning singlisi bizning uyimizga mehmonga keldi."],
-    ["родственник","qarindosh","Он мой родственник.","U mening qarindoshim."],
-    ["вдовец / вдова","beva erkak / beva ayol","Она вдова, живёт одна.","U beva, yolg'iz yashaydi."],
-    ["отчим / мачеха","o'gay ota / o'gay ona","Отчим добрый человек.","O'gay otam mehribon odam."],
-    ["свояк","xotinlari opa-singil bo'lgan erkaklar (bir-biriga)","Мы со свояком часто встречаемся.","Biz qaynakam bilan tez-tez uchrashamiz."],
-    ["прабабушка","katta buvi","Моей прабабушке девяносто лет.","Katta buvimning yoshi to'qsonda."],
-    ["прадедушка","katta bobo","Мой прадедушка был учителем.","Katta bobom o'qituvchi bo'lgan."],
-    ["в нашей семье","bizning oilamizda","В нашей семье пять человек.","Bizning oilamizda besh kishi bor."],
-    ["у меня есть...","menda ... bor","У меня есть брат и сестра.","Menda aka va singil bor."],
-    ["старший / младший брат","katta / kichik aka-uka","Мой старший брат живёт в Москве.","Katta akam Moskvada yashaydi."],
-    ["живём вместе","birga yashaymiz","Мы живём вместе с бабушкой.","Biz buvim bilan birga yashaymiz."],
-    ["близкий / дальний родственник","yaqin / uzoq qarindosh","Он мой дальний родственник.","U mening uzoq qarindoshim."],
-    ["гостеприимные люди","mehmondo'st odamlar","Узбеки — гостеприимные люди.","O'zbeklar mehmondo'st xalq."],
-    ["ходили в гости","mehmonga bordik","Вчера мы ходили в гости к дяде.","Kecha amakinikiga mehmonga bordik."],
-    ["праздновать вместе","birga bayram qilish","Мы любим праздновать вместе.","Biz birga bayram qilishni yaxshi ko'ramiz."],
-    ["сводный / родной","o'gay / tug'ishgan","Это мой родной брат.","Bu mening tug'ishgan akam."],
-    ["пожилой человек","keksa odam","Пожилой человек сидит на скамейке.","Keksa odam skameykada o'tiribdi."],
-    ["родственники с маминой стороны","ona tomondan qarindoshlar","Это родственники с маминой стороны.","Bular ona tomondan qarindoshlarim."],
-    ["родственники с папиной стороны","ota tomondan qarindoshlar","Родственники с папиной стороны живут в деревне.","Ota tomondan qarindoshlarim qishloqda yashaydi."]
-  ]}
-  /* , {icon:"🚌", uz:"Transport", ru:"Транспорт", items:[ ... ]} */
-];
-
+/* So'zlar words.json da. Audio: tools/make_audio.py (GitHub Actions o'zi ishga tushiradi). */
 const $ = id => document.getElementById(id);
-let cat = null, catN = 0, i = 0, hidden = false, auto = false, token = 0, ruVoice = null;
+const plain = s => s.replace(/'/g, '');                                       // urg'u belgisisiz
+const stress = s => plain(s.replace(/([аеиоуыэюяАЕИОУЫЭЮЯ])'/g, '$1́')); // ба'бушка -> ба́бушка
+const RATES = [0.8, 1, 1.25];
 
-/* --- Ovoz --- */
+let CATS = [], AUD = {}, cat = null, catN = 0, i = 0, hidden = false;
+let playing = false, stopAt = null, token = 0, loaded = null, ruVoice = null;
+const audio = new Audio();
+audio.loop = true;
+
+/* --- Progress (telefonda saqlanadi) --- */
+let P = {last: null, seen: {}, rate: 1};
+try { P = Object.assign(P, JSON.parse(localStorage.getItem('rusP') || '{}')); } catch (e) {}
+function saveP(){ try { localStorage.setItem('rusP', JSON.stringify(P)); } catch (e) {} }
+
+/* --- Ma'lumot --- */
+Promise.all([
+  fetch('words.json').then(r => r.json()),
+  fetch('audio/index.json').then(r => r.json()).catch(() => ({}))
+]).then(([c, a]) => {
+  CATS = c; AUD = a;
+  // eski versiyada progress mavzu raqami bilan saqlangan edi
+  CATS.forEach((x, n) => { if (P.seen[n] && !P.seen[x.id]) { P.seen[x.id] = P.seen[n]; delete P.seen[n]; } });
+  renderHome();
+}).catch(() => { $('cats').innerHTML = '<div class="msg">So\'zlarni yuklab bo\'lmadi. Internetni tekshiring.</div>'; });
+
+/* Mavzu uchun tayyor audio (words.json o'zgarib, audio hali yangilanmagan bo'lsa — null) */
+function track(){
+  const a = cat && AUD[cat.id];
+  return a && a.items.length === cat.items.length && a.items.every((x, k) => x.ru === cat.items[k][0]) ? a : null;
+}
+async function loadAudio(){
+  const a = track();
+  if (!a || loaded === a.file) return !!a;
+  note('Audio yuklanmoqda…');
+  try {
+    const r = await fetch(a.file);
+    if (!r.ok) throw 0;
+    const url = URL.createObjectURL(await r.blob());
+    if (audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
+    audio.src = url; loaded = a.file; note('');
+    return true;
+  } catch (e) { note("Audio yuklanmadi — telefon ovozidan foydalaniladi."); return false; }
+}
+const ready = () => { const a = track(); return a && loaded === a.file ? a : null; };
+
+/* --- Telefon ovozi (audio yo'q bo'lsa zaxira) --- */
 function pickVoice(){
-  const v = speechSynthesis.getVoices().filter(x => x.lang && x.lang.toLowerCase().startsWith('ru'));
-  ruVoice = v[0] || null;
-  $('vnote').textContent = ruVoice ? '' : "Diqqat: qurilmada rus ovozi topilmadi. Telefon sozlamalari → Text-to-speech'dan rus tilini yuklab oling.";
+  ruVoice = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith('ru')) || null;
 }
 if ('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-
 function say(text){
   return new Promise(res => {
     if (!('speechSynthesis' in window)) return res();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ru-RU'; u.rate = 0.85;
+    const u = new SpeechSynthesisUtterance(plain(text).replace(/\//g, ','));
+    u.lang = 'ru-RU'; u.rate = 0.85 * P.rate;
     if (ruVoice) u.voice = ruVoice;
     u.onend = u.onerror = () => res();
     speechSynthesis.speak(u);
   });
 }
-function stopAudio(){ token++; speechSynthesis.cancel(); }
+const wait = ms => new Promise(r => setTimeout(r, ms / P.rate));
+
+/* --- Ijro --- */
+function stopAll(){
+  playing = false; stopAt = null; token++;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  audio.pause();
+  updAuto();
+}
+async function startAuto(){
+  stopAt = null; token++;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  playing = true; updAuto();
+  if (!ready() && !(await loadAudio())) return ttsLoop(token);
+  if (!playing) return;
+  audio.currentTime = ready().items[i].t;
+  audio.playbackRate = P.rate;
+  audio.play().catch(() => { playing = false; updAuto(); note('Yana bir marta bosing.'); });
+}
+async function ttsLoop(my){
+  while (playing && my === token){
+    const it = cat.items[i];
+    await say(it[0]); if (my !== token) return;
+    await wait(1500); if (my !== token) return;
+    await say(it[2]); if (my !== token) return;
+    await wait(1800); if (my !== token) return;
+    i = (i + 1) % cat.items.length; show();
+  }
+}
+function playWord(){
+  stopAll();
+  const a = ready();
+  if (a){ audio.currentTime = a.items[i].t; stopAt = a.items[i].w; audio.playbackRate = P.rate; audio.play().catch(() => {}); }
+  else say(cat.items[i][0]);
+}
+audio.ontimeupdate = () => {
+  const a = ready(); if (!a) return;
+  const t = audio.currentTime;
+  if (stopAt !== null){ if (t >= stopAt){ audio.pause(); stopAt = null; } return; }
+  if (!playing) return;
+  let k = 0;
+  while (k + 1 < a.items.length && a.items[k + 1].t <= t) k++;
+  if (k !== i){ i = k; show(); }
+  if (hidden) $('study').classList.toggle('hide', t < a.items[i].u); // o'zbekchasi o'qilganda ochiladi
+};
+// quloqchin/qulflangan ekrandan to'xtatilsa yoki davom ettirilsa
+audio.onpause = () => { if (playing && stopAt === null && ready()){ playing = false; updAuto(); } };
+audio.onplay = () => { if (!playing && stopAt === null){ playing = true; updAuto(); } };
+
+function updAuto(){
+  $('auto').classList.toggle('on', playing);
+  $('auto').textContent = playing ? '⏸ To\'xtatish' : '🎧 Tinglash';
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+}
+function updMedia(){
+  if (!('mediaSession' in navigator) || !window.MediaMetadata) return;
+  const it = cat.items[i];
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: plain(it[0]), artist: it[1], album: cat.uz + ' — rus tili',
+    artwork: [{src: 'icon-512.png', sizes: '512x512', type: 'image/png'}]
+  });
+}
+if ('mediaSession' in navigator){
+  const h = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} };
+  h('play', startAuto); h('pause', stopAll); h('stop', stopAll);
+  h('nexttrack', () => go(1)); h('previoustrack', () => go(-1));
+}
 
 /* --- Ko'rinish --- */
-/* --- Progress (telefonda saqlanadi) --- */
-let P = {last:null, seen:{}};
-try { P = Object.assign(P, JSON.parse(localStorage.getItem('rusP') || '{}')); } catch(e){}
-function saveP(){ try { localStorage.setItem('rusP', JSON.stringify(P)); } catch(e){} }
-
+function note(t){ $('note').textContent = t; }
 function renderHome(){
-  $('cats').innerHTML = '';
+  const cats = $('cats');
+  cats.innerHTML = '';
   CATS.forEach((c, n) => {
-    const seen = Math.min(P.seen[n] || 0, c.items.length), pct = Math.round(seen / c.items.length * 100);
+    const pct = Math.round(Math.min(P.seen[c.id] || 0, c.items.length) / c.items.length * 100);
     const b = document.createElement('button');
     b.className = 'cat';
     b.innerHTML = `<div class="ic">${c.icon}</div>
       <div class="nm">${c.uz}<i>${c.ru}</i></div>
       <div class="bar"><div style="width:${pct}%"></div></div>`;
     b.onclick = () => openCat(n, 0);
-    $('cats').appendChild(b);
+    cats.appendChild(b);
   });
+  const ln = P.last ? CATS.findIndex(c => c.id === P.last.id) : -1;
+  $('cont').classList.toggle('hidden', ln < 0);
+  if (ln >= 0){
+    const c = CATS[ln], k = Math.min(P.last.i, c.items.length - 1);
+    $('contT').textContent = `${c.uz} · ${k + 1}/${c.items.length}`;
+    $('cont').onclick = () => openCat(ln, k);
+  }
 }
 function openCat(n, start){
   cat = CATS[n]; catN = n; i = start || 0;
   $('home').classList.add('hidden'); $('study').classList.remove('hidden');
+  note(!track() && !ruVoice ? "Bu mavzu audiosi hali tayyor emas, qurilmada rus ovozi ham topilmadi." : '');
   show();
+  loadAudio(); // oldindan yuklab qo'yamiz: «Tinglash» bosilganda darhol boshlansin
 }
 function show(){
   const [ru, uz, sr, su] = cat.items[i];
-  $('ru').textContent = ru; $('uz').textContent = uz;
-  $('sr').textContent = sr; $('su').textContent = '(' + su + ')';
+  $('ru').textContent = stress(ru); $('uz').textContent = uz;
+  $('sr').textContent = stress(sr); $('su').textContent = '(' + su + ')';
   $('count').textContent = `${i + 1} / ${cat.items.length}`;
   $('study').classList.toggle('hide', hidden);
-  P.last = {c:catN, i:i};
-  P.seen[catN] = Math.max(P.seen[catN] || 0, i + 1);
-  saveP();
+  P.last = {id: cat.id, i};
+  P.seen[cat.id] = Math.max(P.seen[cat.id] || 0, i + 1);
+  saveP(); updMedia();
 }
 function go(d){
-  stopAudio();
   i = (i + d + cat.items.length) % cat.items.length;
   show();
+  if (playing) startAuto(); else stopAll();
 }
+function updSpeed(){ $('speed').textContent = P.rate + '×'; audio.playbackRate = P.rate; }
 
 /* --- Tugmalar --- */
-$('back').onclick = () => { stopAudio(); $('study').classList.add('hidden'); renderHome(); $('home').classList.remove('hidden'); };
+$('back').onclick = () => { stopAll(); $('study').classList.add('hidden'); renderHome(); $('home').classList.remove('hidden'); };
 $('prev').onclick = () => go(-1);
 $('next').onclick = () => go(1);
-$('pw').onclick = () => { stopAudio(); say(cat.items[i][0]); };
+$('pw').onclick = playWord;
+$('auto').onclick = () => playing ? stopAll() : startAuto();
+$('speed').onclick = () => { P.rate = RATES[(RATES.indexOf(P.rate) + 1) % RATES.length]; saveP(); updSpeed(); };
 $('hideBtn').onclick = () => {
   hidden = !hidden; $('hideBtn').classList.toggle('on', hidden);
   $('hideBtn').textContent = hidden ? "👁 Tarjimani ko'rsatish" : '👁 Tarjimani yashirish';
-  show();
+  $('study').classList.toggle('hide', hidden);
 };
 $('card').onclick = () => { if (hidden) $('study').classList.toggle('hide'); };
+if (!RATES.includes(P.rate)) P.rate = 1;
+updSpeed();
 
-renderHome();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>

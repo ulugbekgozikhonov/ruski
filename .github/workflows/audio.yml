@@ -1,0 +1,32 @@
+name: Audio
+
+# words.json o'zgarsa, o'zgargan mavzular audiosini qayta yaratib commit qiladi
+on:
+  push:
+    branches: [main]
+    paths: [words.json, tools/**]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: audio
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements.txt
+      - run: python tools/make_audio.py
+      - name: Commit
+        run: |
+          git add audio
+          if git diff --cached --quiet; then echo "Audio o'zgarmadi"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "audio: words.json bo'yicha yangilandi"
+          git push
