@@ -2,8 +2,8 @@
 
 Rus tili so'zlarini yo'lda tinglab yodlash uchun sayt: https://ulugbekgozikhonov.github.io/ruski/
 
-- **🎧 Tinglash** — mavzuni to'xtovsiz o'qiydi: rus so'zi → pauza → o'zbekcha → rus so'zi → misol gap → tarjimasi.
-  Ekran o'chganda ham ishlaydi, quloqchin tugmalari bilan boshqariladi (pauza, keyingi/oldingi).
+- **🎧 Tinglash** — mavzuni to'xtovsiz o'qiydi: rus so'zi → pauza → o'zbekcha (misol gaplar faqat ekranda).
+  Tinglash paytida ekran o'chmaydi; saytdan chiqilsa (boshqa ilova, ekran qulfi) to'xtaydi.
 - **👁 Tarjimani yashirish** — o'zingni tekshirish uchun. Tinglash paytida tarjima o'qilganda o'zi ochiladi.
 - Telefonda brauzer menyusidan **"Bosh ekranga qo'shish"**: ilova kabi ochiladi va internetsiz ishlaydi.
 

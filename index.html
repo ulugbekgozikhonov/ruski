@@ -180,9 +180,7 @@ async function ttsLoop(my){
   while (playing && my === token){
     const it = cat.items[i];
     await say(it[0]); if (my !== token) return;
-    await wait(1500); if (my !== token) return;
-    await say(it[2]); if (my !== token) return;
-    await wait(1800); if (my !== token) return;
+    await wait(2500); if (my !== token) return;
     i = (i + 1) % cat.items.length; show();
   }
 }
@@ -206,7 +204,21 @@ audio.ontimeupdate = () => {
 audio.onpause = () => { if (playing && stopAt === null && ready()){ playing = false; updAuto(); } };
 audio.onplay = () => { if (!playing && stopAt === null){ playing = true; updAuto(); } };
 
+// saytdan chiqilsa (boshqa ilova, yopilgan tab yoki o'chgan ekran) — to'xtaydi
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
+addEventListener('pagehide', stopAll);
+
+// tinglash paytida ekran o'zi o'chib, ijroni to'xtatib qo'ymasin
+let wakeLock = null;
+async function keepAwake(on){
+  if (!('wakeLock' in navigator)) return;
+  if (on && !wakeLock){
+    try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.onrelease = () => { wakeLock = null; }; } catch (e) {}
+  } else if (!on && wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
 function updAuto(){
+  keepAwake(playing);
   $('auto').classList.toggle('on', playing);
   $('auto').textContent = playing ? '⏸ To\'xtatish' : '🎧 Tinglash';
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
