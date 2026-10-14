@@ -1,7 +1,7 @@
 """words.json dan har bir mavzu uchun tinglash audiosini yaratadi.
 
-Har bir so'z uchun tartib (PLAN): rus so'zi -> pauza (eslashga vaqt) -> o'zbekcha.
-Misol gaplar faqat ekranda. Natija: audio/<id>.mp3 va
+Har bir so'z uchun tartib (PLAN): rus so'zi -> pauza (eslashga vaqt) -> o'zbekcha ->
+rus misol gapi. Natija: audio/<id>.mp3 va
 audio/index.json (sayt qaysi so'z qachon o'qilishini shundan biladi).
 
 O'zgarmagan mavzular qayta yaratilmaydi.
@@ -9,9 +9,11 @@ O'zgarmagan mavzular qayta yaratilmaydi.
     pip install -r tools/requirements.txt
     python tools/make_audio.py
 """
+import array
 import asyncio
 import hashlib
 import json
+import random
 import re
 import shutil
 import subprocess
@@ -26,8 +28,8 @@ CACHE = Path(__file__).resolve().parent / ".cache"
 VOICES = {"ru": ("ru-RU-SvetlanaNeural", "-10%"), "uz": ("uz-UZ-SardorNeural", "+0%")}
 SR = 24000  # Hz, mono, 16-bit PCM
 # (til, items dagi ustun, keyingi pauza soniyada)
-PLAN = [("ru", 0, 1.3), ("uz", 1, 1.5)]
-VERSION = "3"  # VOICES yoki PLAN o'zgarsa oshiring: hamma audio qayta yaratiladi
+PLAN = [("ru", 0, 1.2), ("uz", 1, 0.8), ("ru", 2, 1.6)]
+VERSION = "4"  # VOICES yoki PLAN o'zgarsa oshiring: hamma audio qayta yaratiladi
 
 
 def ffmpeg():
@@ -57,6 +59,8 @@ async def tts(text, lang):
             async for chunk in edge_tts.Communicate(text, voice, rate=rate).stream():
                 if chunk["type"] == "audio":
                     mp3 += chunk["data"]
+            if not mp3:
+                raise RuntimeError("bo'sh audio")
             break
         except Exception:
             if attempt == 5:
@@ -72,19 +76,42 @@ async def tts(text, lang):
     return pcm
 
 
+def trim(pcm, keep=0.06, threshold=400):
+    """Klip boshi va oxiridagi uzun jimlikni kesadi (pauzani PLAN o'zi beradi)."""
+    a = array.array("h", pcm)
+    if not a:
+        return pcm
+    start = next((i for i, x in enumerate(a) if abs(x) > threshold), 0)
+    end = next((i for i in range(len(a) - 1, -1, -1) if abs(a[i]) > threshold), len(a) - 1)
+    pad = int(SR * keep)
+    return a[max(0, start - pad):min(len(a), end + pad)].tobytes()
+
+
+# Bluetooth quloqchinlar mutlaq jimlikda "uxlab" qoladi va keyingi so'z boshini yutadi.
+# Shuning uchun pauzalar eshitilmaydigan darajadagi (~-62 dB) shovqin bilan to'ldiriladi.
+_rnd = random.Random(0)
+_HUSH = array.array("h", (_rnd.randint(-25, 25) for _ in range(SR * 3))).tobytes()
+
+
+def hush(seconds):
+    n = 2 * int(SR * seconds)
+    return (_HUSH * (n // len(_HUSH) + 1))[:n]
+
+
 async def build(cat):
     pcm = bytearray()
     marks = []
     now = lambda: round(len(pcm) / (2 * SR), 2)
+    pcm += hush(0.3)
     for item in cat["items"]:
         mark = {"ru": item[0], "t": now()}
         for n, (lang, col, pause) in enumerate(PLAN):
             if lang == "uz" and "u" not in mark:
                 mark["u"] = now()
-            pcm += await tts(speakable(item[col], lang), lang)
+            pcm += trim(await tts(speakable(item[col], lang), lang))
             if n == 0:
                 mark["w"] = now()
-            pcm += bytes(2 * int(SR * pause))
+            pcm += hush(pause)
         marks.append(mark)
     mp3 = subprocess.run(
         [ffmpeg(), "-v", "error", "-f", "s16le", "-ar", str(SR), "-ac", "1", "-i", "pipe:0",

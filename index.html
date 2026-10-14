@@ -180,7 +180,9 @@ async function ttsLoop(my){
   while (playing && my === token){
     const it = cat.items[i];
     await say(it[0]); if (my !== token) return;
-    await wait(2500); if (my !== token) return;
+    await wait(1500); if (my !== token) return;
+    await say(it[2]); if (my !== token) return;
+    await wait(1800); if (my !== token) return;
     i = (i + 1) % cat.items.length; show();
   }
 }
