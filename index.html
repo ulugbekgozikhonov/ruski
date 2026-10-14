@@ -127,18 +127,29 @@ function track(){
   const a = cat && AUD[cat.id];
   return a && a.items.length === cat.items.length && a.items.every((x, k) => x.ru === cat.items[k][0]) ? a : null;
 }
-async function loadAudio(){
+let loading = null; // {file, promise} — hozir yuklanayotgan audio
+function loadAudio(){
   const a = track();
-  if (!a || loaded === a.file) return !!a;
+  if (!a || loaded === a.file) return Promise.resolve(!!a);
+  if (loading && loading.file === a.file) return loading.promise;
   note('Audio yuklanmoqda…');
-  try {
-    const r = await fetch(a.file);
-    if (!r.ok) throw 0;
-    const url = URL.createObjectURL(await r.blob());
-    if (audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
-    audio.src = url; loaded = a.file; note('');
-    return true;
-  } catch (e) { note("Audio yuklanmadi — telefon ovozidan foydalaniladi."); return false; }
+  const promise = (async () => {
+    try {
+      const r = await fetch(a.file);
+      if (!r.ok) throw 0;
+      const blob = await r.blob();
+      const now = track();
+      if (!now || now.file !== a.file) return false; // bu orada boshqa mavzu ochildi
+      if (audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
+      audio.src = URL.createObjectURL(blob); loaded = a.file; note('');
+      return true;
+    } catch (e) {
+      if (track() === a) note("Audio yuklanmadi — telefon ovozidan foydalaniladi.");
+      return false;
+    } finally { if (loading && loading.file === a.file) loading = null; }
+  })();
+  loading = {file: a.file, promise};
+  return promise;
 }
 const ready = () => { const a = track(); return a && loaded === a.file ? a : null; };
 
@@ -214,8 +225,12 @@ addEventListener('pagehide', stopAll);
 let wakeLock = null;
 async function keepAwake(on){
   if (!('wakeLock' in navigator)) return;
-  if (on && !wakeLock){
-    try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.onrelease = () => { wakeLock = null; }; } catch (e) {}
+  if (on && !wakeLock && !document.hidden){
+    try {
+      const lock = await navigator.wakeLock.request('screen');
+      if (!playing){ lock.release().catch(() => {}); return; } // kutish paytida to'xtatildi
+      wakeLock = lock; lock.onrelease = () => { if (wakeLock === lock) wakeLock = null; };
+    } catch (e) {}
   } else if (!on && wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }
 }
 
@@ -235,8 +250,8 @@ function updMedia(){
 }
 if ('mediaSession' in navigator){
   const h = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} };
-  h('play', startAuto); h('pause', stopAll); h('stop', stopAll);
-  h('nexttrack', () => go(1)); h('previoustrack', () => go(-1));
+  h('play', () => cat && startAuto()); h('pause', stopAll); h('stop', stopAll);
+  h('nexttrack', () => cat && go(1)); h('previoustrack', () => cat && go(-1));
 }
 
 /* --- Ko'rinish --- */

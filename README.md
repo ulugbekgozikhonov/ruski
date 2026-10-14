@@ -2,7 +2,7 @@
 
 Rus tili so'zlarini yo'lda tinglab yodlash uchun sayt: https://ulugbekgozikhonov.github.io/ruski/
 
-- **🎧 Tinglash** — mavzuni to'xtovsiz o'qiydi: rus so'zi → pauza → o'zbekcha → rus misol gapi.
+- **🎧 Tinglash** — mavzuni to'xtovsiz o'qiydi: rus so'zi → pauza → o'zbekcha → rus misol gapi → gap tarjimasi.
   Tinglash paytida ekran o'chmaydi; saytdan chiqilsa (boshqa ilova, ekran qulfi) to'xtaydi.
 - **👁 Tarjimani yashirish** — o'zingni tekshirish uchun. Tinglash paytida tarjima o'qilganda o'zi ochiladi.
 - Telefonda brauzer menyusidan **"Bosh ekranga qo'shish"**: ilova kabi ochiladi va internetsiz ishlaydi.

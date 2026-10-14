@@ -1,7 +1,7 @@
 """words.json dan har bir mavzu uchun tinglash audiosini yaratadi.
 
 Har bir so'z uchun tartib (PLAN): rus so'zi -> pauza (eslashga vaqt) -> o'zbekcha ->
-rus misol gapi. Natija: audio/<id>.mp3 va
+rus misol gapi -> uning tarjimasi. Natija: audio/<id>.mp3 va
 audio/index.json (sayt qaysi so'z qachon o'qilishini shundan biladi).
 
 O'zgarmagan mavzular qayta yaratilmaydi.
@@ -28,8 +28,8 @@ CACHE = Path(__file__).resolve().parent / ".cache"
 VOICES = {"ru": ("ru-RU-SvetlanaNeural", "-10%"), "uz": ("uz-UZ-SardorNeural", "+0%")}
 SR = 24000  # Hz, mono, 16-bit PCM
 # (til, items dagi ustun, keyingi pauza soniyada)
-PLAN = [("ru", 0, 1.2), ("uz", 1, 0.8), ("ru", 2, 1.6)]
-VERSION = "4"  # VOICES yoki PLAN o'zgarsa oshiring: hamma audio qayta yaratiladi
+PLAN = [("ru", 0, 1.2), ("uz", 1, 0.8), ("ru", 2, 0.6), ("uz", 3, 1.6)]
+VERSION = "5"  # VOICES yoki PLAN o'zgarsa oshiring: hamma audio qayta yaratiladi
 
 
 def ffmpeg():
