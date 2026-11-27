@@ -2,8 +2,6 @@
 
 Rus tili so'zlarini yo'lda tinglab yodlash uchun sayt: https://ulugbekgozikhonov.github.io/ruski/
 
-O'quv reja (darslar, grammatika, kunlik tartib): [REJA.md](REJA.md)
-
 - **🎧 Tinglash** — mavzuni to'xtovsiz o'qiydi: rus so'zi → pauza → o'zbekcha → rus misol gapi → gap tarjimasi.
   Tinglash paytida ekran o'chmaydi; saytdan chiqilsa (boshqa ilova, ekran qulfi) to'xtaydi.
 - **🗣 Takrorlash** — har bir ruscha gapdan keyin uning uzunligiga yarasha pauza: shu vaqtda ovoz chiqarib qaytarasan.
@@ -21,7 +19,7 @@ O'quv reja (darslar, grammatika, kunlik tartib): [REJA.md](REJA.md)
 ```
 
 - `items`: `[rus so'zi, tarjima, rus gapi, gap tarjimasi]`
-- Ixtiyoriy: `"g": "Gaplashish"` — bosh sahifadagi bo'lim (bo'lmasa "So'zlar"), `"dars": 1` — o'quv rejadagi dars raqami.
+- Ixtiyoriy: `"g": "Gaplashish"` — bosh sahifadagi bo'lim (bo'lmasa "So'zlar"), `"dars": 1` — dars raqami (mavzu kartasida ko'rinadi).
 - Urg'u: urg'uli unlidan keyin `'` qo'ying — `ба'бушка` saytda `ба́бушка` bo'lib chiqadi.
 - `id` — lotin harflarida, takrorlanmasin (audio fayl nomi shundan).
 
