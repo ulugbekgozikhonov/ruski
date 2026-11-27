@@ -93,7 +93,9 @@ async def tts(text, lang):
         input=mp3, capture_output=True, check=True,
     ).stdout
     CACHE.mkdir(exist_ok=True)
-    path.write_bytes(pcm)
+    tmp = path.with_suffix(".tmp")  # run to'xtatilsa chala fayl keshga tushmasin
+    tmp.write_bytes(pcm)
+    tmp.replace(path)
     return pcm
 
 
