@@ -23,8 +23,14 @@ button{font:inherit;cursor:pointer;color:var(--tx)}
 /* --- Bosh sahifa --- */
 .hdr{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;background:var(--bg);margin:-12px -12px 12px;padding:12px;border-bottom:1px solid var(--bd);font-size:17px;font-weight:700}
 .hdr a{font-size:14px;font-weight:500;color:var(--ac);text-decoration:none}
-.grp{grid-column:1/-1;margin:6px 2px -2px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
-.grp:first-child{margin-top:0}
+.sec{width:100%;display:flex;align-items:center;gap:14px;margin-bottom:12px;padding:18px 16px;background:var(--card);border:1px solid var(--bd);border-radius:18px;text-align:left}
+.sec .si{flex:none;width:56px;height:56px;border-radius:16px;background:var(--bg);font-size:30px;display:flex;align-items:center;justify-content:center}
+.sec .st{flex:1;min-width:0}
+.sec b{display:block;font-size:19px}
+.sec small{display:block;margin-top:3px;font-size:13px;color:var(--mut);line-height:1.3}
+.sec .ar{flex:none;font-size:20px;color:var(--mut)}
+.gtop{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.gtop h2{flex:1;margin:0;font-size:19px;text-align:right}
 .cont{width:100%;display:flex;align-items:center;gap:12px;background:var(--ac);color:#fff;border:none;border-radius:14px;padding:14px 16px;margin-bottom:12px;text-align:left}
 .cont span{flex:1}
 .cont small{display:block;opacity:.8;font-size:12px;margin-bottom:2px}
@@ -69,14 +75,22 @@ hr{width:100%;margin:14px 0;border:none;border-top:1px solid var(--bd)}
 <div class="wrap">
 
 <div id="home">
-  <header class="hdr">Mavzular <a href="https://github.com/ulugbekgozikhonov/ruski/blob/main/REJA.md" target="_blank" rel="noopener">📘 O'quv reja</a></header>
+  <header class="hdr">Rus tili <a href="https://github.com/ulugbekgozikhonov/ruski/blob/main/REJA.md" target="_blank" rel="noopener">📘 O'quv reja</a></header>
   <button class="cont hidden" id="cont"><span><small>Davom etish</small><b id="contT"></b></span>→</button>
-  <div id="cats"><div class="msg">Yuklanmoqda…</div></div>
+  <div id="secs"><div class="msg">Yuklanmoqda…</div></div>
+</div>
+
+<div id="group" class="hidden">
+  <div class="gtop">
+    <button class="ghost" id="gback">← Bo'limlar</button>
+    <h2 id="gtitle"></h2>
+  </div>
+  <div id="cats"></div>
 </div>
 
 <div id="study" class="hidden">
   <div class="top">
-    <button class="ghost" id="back">← Mavzular</button>
+    <button class="ghost" id="back">← Orqaga</button>
     <span class="count" id="count"></span>
     <button class="speed" id="speed"></button>
   </div>
@@ -127,8 +141,8 @@ Promise.all([
   CATS = c; AUD = a;
   // eski versiyada progress mavzu raqami bilan saqlangan edi
   CATS.forEach((x, n) => { if (P.seen[n] && !P.seen[x.id]) { P.seen[x.id] = P.seen[n]; delete P.seen[n]; } });
-  renderHome();
-}).catch(() => { $('cats').innerHTML = '<div class="msg">So\'zlarni yuklab bo\'lmadi. Internetni tekshiring.</div>'; });
+  route(history.state || {v: 'home'});
+}).catch(() => { $('secs').innerHTML = '<div class="msg">So\'zlarni yuklab bo\'lmadi. Internetni tekshiring.</div>'; });
 
 /* Mavzu uchun tayyor audio (words.json o'zgarib, audio hali yangilanmagan bo'lsa — null).
    Takrorlash rejimida <id>-t: har bir ruscha gapdan keyin qaytarib aytish uchun pauza. */
@@ -268,19 +282,58 @@ if ('mediaSession' in navigator){
 
 /* --- Ko'rinish --- */
 function note(t){ $('note').textContent = t; }
+/* Bo'limlar: words.json dagi "g" maydoni (bo'lmasa — so'zlar) */
+const SECS = {
+  'Gaplashish': {icon: '🗣', title: 'Gaplashish', sub: 'Tayyor iboralar'},
+  "So'zlar": {icon: '📚', title: "So'z yodlash", sub: "So'zlar va misollar"},
+};
+const grpOf = c => c.g || "So'zlar";
+const pctOf = list => {
+  const all = list.reduce((s, c) => s + c.items.length, 0);
+  const seen = list.reduce((s, c) => s + Math.min(P.seen[c.id] || 0, c.items.length), 0);
+  return all ? Math.round(seen / all * 100) : 0;
+};
 function renderHome(){
-  const cats = $('cats');
-  cats.innerHTML = '';
-  const groups = [...new Set(CATS.map(c => c.g || "So'zlar"))]
-    .sort((a, b) => (b === 'Gaplashish') - (a === 'Gaplashish'));
+  const secs = $('secs');
+  secs.innerHTML = '';
+  const groups = [...new Set(CATS.map(grpOf))].sort((a, b) => (b === 'Gaplashish') - (a === 'Gaplashish'));
   groups.forEach(g => {
-    const hd = document.createElement('div');
-    hd.className = 'grp'; hd.textContent = g;
-    cats.appendChild(hd);
-    CATS.forEach((c, n) => { if ((c.g || "So'zlar") === g) cats.appendChild(catBtn(c, n)); });
+    const list = CATS.filter(c => grpOf(c) === g), S = SECS[g] || {icon: '📁', title: g, sub: ''};
+    const b = document.createElement('button');
+    b.className = 'sec';
+    b.innerHTML = `<div class="si">${S.icon}</div>
+      <div class="st"><b>${S.title}</b><small>${list.length} ta mavzu · ${S.sub}</small>
+      <div class="bar"><div style="width:${pctOf(list)}%"></div></div></div>
+      <span class="ar">›</span>`;
+    b.onclick = () => nav({v: 'group', g});
+    secs.appendChild(b);
   });
   renderCont();
 }
+function renderGroup(g){
+  const S = SECS[g] || {title: g};
+  $('gtitle').textContent = S.title;
+  const cats = $('cats');
+  cats.innerHTML = '';
+  CATS.forEach((c, n) => { if (grpOf(c) === g) cats.appendChild(catBtn(c, n)); });
+}
+
+/* Sahifalar orasida yurish. Telefonning «orqaga» tugmasi ham bir qadam orqaga qaytaradi. */
+function route(st){
+  const v = st.v === 'study' && CATS[st.n] ? 'study' : st.v === 'group' ? 'group' : 'home';
+  if (v !== 'study') stopAll();
+  $('home').classList.toggle('hidden', v !== 'home');
+  $('group').classList.toggle('hidden', v !== 'group');
+  $('study').classList.toggle('hidden', v !== 'study');
+  if (v === 'home') renderHome();
+  if (v === 'group') renderGroup(st.g);
+  if (v === 'study') startCat(st.n, st.i);
+  scrollTo(0, 0);
+}
+function nav(st){ history.pushState(st, ''); route(st); }
+addEventListener('popstate', e => route(e.state || {v: 'home'}));
+function back(){ if (history.state && history.state.v !== 'home') history.back(); else route({v: 'home'}); }
+if (!history.state) history.replaceState({v: 'home'}, '');
 function catBtn(c, n){
   const pct = Math.round(Math.min(P.seen[c.id] || 0, c.items.length) / c.items.length * 100);
   const b = document.createElement('button');
@@ -297,12 +350,16 @@ function renderCont(){
   if (ln >= 0){
     const c = CATS[ln], k = Math.min(P.last.i, c.items.length - 1);
     $('contT').textContent = `${c.uz} · ${k + 1}/${c.items.length}`;
-    $('cont').onclick = () => openCat(ln, k);
+    $('cont').onclick = () => { // orqaga bosilganda shu mavzu bo'limiga qaytadi
+      history.pushState({v: 'group', g: grpOf(c)}, ''); openCat(ln, k);
+    };
   }
 }
-function openCat(n, start){
-  cat = CATS[n]; catN = n; i = start || 0;
-  $('home').classList.add('hidden'); $('study').classList.remove('hidden');
+function openCat(n, start){ nav({v: 'study', n, i: start || 0}); }
+function startCat(n, start){
+  // orqaga-oldinga bilan shu mavzuga qaytilsa, oxirgi joyidan davom etadi
+  const same = cat === CATS[n];
+  cat = CATS[n]; catN = n; i = same ? i : Math.min(start || 0, cat.items.length - 1);
   note(!track() && !ruVoice ? "Bu mavzu audiosi hali tayyor emas, qurilmada rus ovozi ham topilmadi." : '');
   show();
   loadAudio(); // oldindan yuklab qo'yamiz: «Tinglash» bosilganda darhol boshlansin
@@ -325,7 +382,8 @@ function go(d){
 function updSpeed(){ $('speed').textContent = P.rate + '×'; audio.playbackRate = P.rate; }
 
 /* --- Tugmalar --- */
-$('back').onclick = () => { stopAll(); $('study').classList.add('hidden'); renderHome(); $('home').classList.remove('hidden'); };
+$('back').onclick = back;
+$('gback').onclick = back;
 $('prev').onclick = () => go(-1);
 $('next').onclick = () => go(1);
 $('pw').onclick = playWord;
