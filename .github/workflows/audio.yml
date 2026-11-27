@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths: [words.json, tools/**]
   workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # TTS o'qimay qolgan kliplar bo'lsa, qayta urinadi
 
 permissions:
   contents: write
@@ -23,7 +25,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: tools/.cache
-          key: tts-${{ hashFiles('words.json') }}
+          key: tts-${{ hashFiles('words.json') }}-${{ github.run_id }}
           restore-keys: tts-
       - run: pip install -r tools/requirements.txt
       - run: python tools/make_audio.py

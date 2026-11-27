@@ -20,6 +20,7 @@ import random
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import edge_tts
@@ -49,6 +50,9 @@ def ffmpeg():
 
 def speakable(text, lang):
     text = text.replace("/", ",")
+    # "…" (bo'sh joy belgisi) ovozda kerak emas; ", …" bilan tugagan matnga TTS audio qaytarmaydi
+    text = re.sub(r"\s*…\s*", " ", text).strip(" ,")
+    text = re.sub(r"\s+([?!.,])", r"\1", text)
     if lang == "ru":
         return text.replace("'", "")  # urg'u belgisi faqat ekran uchun
     text = re.sub(r"([oOgG])'", "\\1\u02bb", text)  # o' g' -> oʻ gʻ
@@ -56,24 +60,34 @@ def speakable(text, lang):
 
 
 async def tts(text, lang):
+    """Klipning PCM'i; Microsoft bir necha urinishda ham bermasa — None."""
     voice, rate = VOICES[lang]
     path = CACHE / (hashlib.sha1(f"{voice}|{rate}|{text}".encode()).hexdigest() + ".pcm")
     if path.exists():
         return path.read_bytes()
-    for attempt in range(6):  # ko'p so'rovda Microsoft vaqtincha 403 qaytaradi
+    base = int(rate.rstrip("%"))
+    mp3 = b""
+    for attempt in range(10):
+        # Xizmat ba'zan bo'sh javob qaytaradi (tasodifan, matnga bog'liq emas):
+        # tezlikni ±1–3% o'zgartirib qayta so'raymiz — eshitganda farqi sezilmaydi.
+        shift = (0, 1, -1, 2, -2, 3, -3)[attempt % 7]
         try:
-            mp3 = b""
-            async for chunk in edge_tts.Communicate(text, voice, rate=rate).stream():
+            async for chunk in edge_tts.Communicate(text, voice, rate=f"{base + shift:+d}%").stream():
                 if chunk["type"] == "audio":
                     mp3 += chunk["data"]
-            if not mp3:
-                raise RuntimeError("bo'sh audio")
-            break
-        except Exception:
-            if attempt == 5:
-                raise
-            await asyncio.sleep(15 * 2 ** attempt)
-    await asyncio.sleep(0.5)
+            if mp3:
+                break
+            await asyncio.sleep(3 + attempt)
+        except edge_tts.exceptions.NoAudioReceived:
+            mp3 = b""
+            await asyncio.sleep(3 + attempt)
+        except Exception:  # ko'p so'rovda Microsoft vaqtincha 403 qaytaradi
+            mp3 = b""
+            await asyncio.sleep(min(15 * 2 ** attempt, 240))
+    if not mp3:
+        print(f"  ! TTS ishlamadi ({lang}): {text}")
+        return None
+    await asyncio.sleep(0.8)
     pcm = subprocess.run(
         [ffmpeg(), "-v", "error", "-i", "pipe:0", "-f", "s16le", "-ac", "1", "-ar", str(SR), "pipe:1"],
         input=mp3, capture_output=True, check=True,
@@ -106,8 +120,10 @@ def hush(seconds):
 
 
 async def build(cat, plan):
+    """(mp3, marks, to'liqmi). O'qilmagan klip o'rnida qisqa pauza qoladi."""
     pcm = bytearray()
     marks = []
+    complete = True
     now = lambda: round(len(pcm) / (2 * SR), 2)
     pcm += hush(0.3)
     for item in cat["items"]:
@@ -115,7 +131,11 @@ async def build(cat, plan):
         for n, (lang, col, pause) in enumerate(plan):
             if lang == "uz" and "u" not in mark:
                 mark["u"] = now()
-            clip = trim(await tts(speakable(item[col], lang), lang))
+            raw = await tts(speakable(item[col], lang), lang)
+            if raw is None:
+                complete = False
+                raw = hush(0.5)
+            clip = trim(raw)
             pcm += clip
             if pause == REPEAT:
                 pause = len(clip) / (2 * SR) * 1.2 + 1.0
@@ -128,7 +148,7 @@ async def build(cat, plan):
          "-c:a", "libmp3lame", "-b:a", "48k", "-f", "mp3", "pipe:1"],
         input=bytes(pcm), capture_output=True, check=True,
     ).stdout
-    return mp3, marks
+    return mp3, marks, complete
 
 
 def main():
@@ -137,19 +157,35 @@ def main():
     index_path = AUDIO / "index.json"
     old = json.loads(index_path.read_text("utf-8")) if index_path.exists() else {}
     new = {}
+    todo = []
     for cat, suffix in [(c, m) for c in cats for m in MODES]:
         cid = cat["id"] + suffix
         src = hashlib.sha1((VERSION + suffix + json.dumps(cat["items"], ensure_ascii=False)).encode()).hexdigest()[:12]
-        mp3_path = AUDIO / f"{cid}.mp3"
-        if old.get(cid, {}).get("src") == src and mp3_path.exists():
+        if old.get(cid, {}).get("src") == src and (AUDIO / f"{cid}.mp3").exists():
             new[cid] = old[cid]
             print(f"{cid}: o'zgarmagan")
-            continue
-        mp3, marks = asyncio.run(build(cat, MODES[suffix]))
-        mp3_path.write_bytes(mp3)
-        version = hashlib.sha1(mp3).hexdigest()[:10]
-        new[cid] = {"file": f"audio/{cid}.mp3?v={version}", "src": src, "items": marks}
-        print(f"{cid}: {len(marks)} ta so'z, {marks[-1]['t'] / 60:.1f} daqiqa, {len(mp3) // 1024} KB")
+        else:
+            todo.append((cat, suffix, cid, src))
+    # O'qilmay qolgan klip bo'lsa, mavzu bir ozdan keyin qayta yig'iladi (tayyor kliplar keshda).
+    # Baribir to'liq chiqmasa, audio saqlanadi, lekin src belgilanmaydi — keyingi ishga tushishda qayta urinadi.
+    for round_ in range(3):
+        if round_:
+            print(f"{len(todo)} ta mavzu to'liq emas — 60 soniyadan keyin qayta urinish")
+            time.sleep(60)
+        left = []
+        for cat, suffix, cid, src in todo:
+            mp3, marks, complete = asyncio.run(build(cat, MODES[suffix]))
+            mp3_path = AUDIO / f"{cid}.mp3"
+            mp3_path.write_bytes(mp3)
+            version = hashlib.sha1(mp3).hexdigest()[:10]
+            new[cid] = {"file": f"audio/{cid}.mp3?v={version}", "src": src if complete else "partial", "items": marks}
+            print(f"{cid}: {len(marks)} ta so'z, {marks[-1]['t'] / 60:.1f} daqiqa, {len(mp3) // 1024} KB"
+                  + ("" if complete else " — TO'LIQ EMAS"))
+            if not complete:
+                left.append((cat, suffix, cid, src))
+        todo = left
+        if not todo:
+            break
     for f in AUDIO.glob("*.mp3"):
         if f.stem not in new:
             f.unlink()
