@@ -4,6 +4,9 @@ Har bir so'z uchun tartib (PLAN): rus so'zi -> pauza (eslashga vaqt) -> o'zbekch
 rus misol gapi -> uning tarjimasi. Natija: audio/<id>.mp3 va
 audio/index.json (sayt qaysi so'z qachon o'qilishini shundan biladi).
 
+Takrorlash rejimi (audio/<id>-t.mp3): har bir ruscha klipdan keyin uning
+uzunligiga yarasha pauza — tinglovchi shu vaqtda ovoz chiqarib qaytaradi.
+
 O'zgarmagan mavzular qayta yaratilmaydi.
 
     pip install -r tools/requirements.txt
@@ -27,9 +30,13 @@ CACHE = Path(__file__).resolve().parent / ".cache"
 
 VOICES = {"ru": ("ru-RU-SvetlanaNeural", "-10%"), "uz": ("uz-UZ-SardorNeural", "+0%")}
 SR = 24000  # Hz, mono, 16-bit PCM
+REPEAT = "repeat"  # pauza = klip uzunligi * 1.2 + 1 soniya (qaytarib aytishga)
 # (til, items dagi ustun, keyingi pauza soniyada)
-PLAN = [("ru", 0, 1.2), ("uz", 1, 0.8), ("ru", 2, 0.6), ("uz", 3, 1.6)]
-VERSION = "5"  # VOICES yoki PLAN o'zgarsa oshiring: hamma audio qayta yaratiladi
+MODES = {
+    "": [("ru", 0, 1.2), ("uz", 1, 0.8), ("ru", 2, 0.6), ("uz", 3, 1.6)],
+    "-t": [("ru", 0, REPEAT), ("uz", 1, 0.8), ("ru", 2, REPEAT), ("uz", 3, 1.6)],
+}
+VERSION = "5"  # VOICES yoki MODES o'zgarsa oshiring: hamma audio qayta yaratiladi
 
 
 def ffmpeg():
@@ -98,17 +105,20 @@ def hush(seconds):
     return (_HUSH * (n // len(_HUSH) + 1))[:n]
 
 
-async def build(cat):
+async def build(cat, plan):
     pcm = bytearray()
     marks = []
     now = lambda: round(len(pcm) / (2 * SR), 2)
     pcm += hush(0.3)
     for item in cat["items"]:
         mark = {"ru": item[0], "t": now()}
-        for n, (lang, col, pause) in enumerate(PLAN):
+        for n, (lang, col, pause) in enumerate(plan):
             if lang == "uz" and "u" not in mark:
                 mark["u"] = now()
-            pcm += trim(await tts(speakable(item[col], lang), lang))
+            clip = trim(await tts(speakable(item[col], lang), lang))
+            pcm += clip
+            if pause == REPEAT:
+                pause = len(clip) / (2 * SR) * 1.2 + 1.0
             if n == 0:
                 mark["w"] = now()
             pcm += hush(pause)
@@ -127,15 +137,15 @@ def main():
     index_path = AUDIO / "index.json"
     old = json.loads(index_path.read_text("utf-8")) if index_path.exists() else {}
     new = {}
-    for cat in cats:
-        cid = cat["id"]
-        src = hashlib.sha1((VERSION + json.dumps(cat["items"], ensure_ascii=False)).encode()).hexdigest()[:12]
+    for cat, suffix in [(c, m) for c in cats for m in MODES]:
+        cid = cat["id"] + suffix
+        src = hashlib.sha1((VERSION + suffix + json.dumps(cat["items"], ensure_ascii=False)).encode()).hexdigest()[:12]
         mp3_path = AUDIO / f"{cid}.mp3"
         if old.get(cid, {}).get("src") == src and mp3_path.exists():
             new[cid] = old[cid]
             print(f"{cid}: o'zgarmagan")
             continue
-        mp3, marks = asyncio.run(build(cat))
+        mp3, marks = asyncio.run(build(cat, MODES[suffix]))
         mp3_path.write_bytes(mp3)
         version = hashlib.sha1(mp3).hexdigest()[:10]
         new[cid] = {"file": f"audio/{cid}.mp3?v={version}", "src": src, "items": marks}

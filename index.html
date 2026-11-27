@@ -21,14 +21,18 @@ button{font:inherit;cursor:pointer;color:var(--tx)}
 .hidden{display:none!important}
 
 /* --- Bosh sahifa --- */
-.hdr{position:sticky;top:0;z-index:5;background:var(--bg);margin:-12px -12px 12px;padding:12px;border-bottom:1px solid var(--bd);font-size:17px;font-weight:700}
+.hdr{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;background:var(--bg);margin:-12px -12px 12px;padding:12px;border-bottom:1px solid var(--bd);font-size:17px;font-weight:700}
+.hdr a{font-size:14px;font-weight:500;color:var(--ac);text-decoration:none}
+.grp{grid-column:1/-1;margin:6px 2px -2px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.grp:first-child{margin-top:0}
 .cont{width:100%;display:flex;align-items:center;gap:12px;background:var(--ac);color:#fff;border:none;border-radius:14px;padding:14px 16px;margin-bottom:12px;text-align:left}
 .cont span{flex:1}
 .cont small{display:block;opacity:.8;font-size:12px;margin-bottom:2px}
 .cont b{font-size:16px}
 #cats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-items:start}
-.cat{display:block;width:100%;margin:0;padding:12px;background:var(--card);border:1px solid var(--bd);border-radius:14px;text-align:left}
+.cat{position:relative;display:block;width:100%;margin:0;padding:12px;background:var(--card);border:1px solid var(--bd);border-radius:14px;text-align:left}
 .cat .ic{width:38px;height:38px;margin-bottom:8px;border-radius:12px;background:var(--bg);font-size:22px;display:flex;align-items:center;justify-content:center}
+.cat .ds{position:absolute;top:12px;right:12px;padding:2px 8px;border-radius:999px;background:var(--bg);font-size:11px;color:var(--mut)}
 .cat .nm{font-weight:600;font-size:15px}
 .cat .nm i{display:block;margin-top:2px;font-style:normal;font-weight:400;font-size:13px;color:var(--mut)}
 .bar{height:4px;margin-top:8px;background:var(--bd);border-radius:9px;overflow:hidden}
@@ -55,7 +59,8 @@ hr{width:100%;margin:14px 0;border:none;border-top:1px solid var(--bd)}
 .row button{flex:1;height:58px;font-size:17px;font-weight:600;border-radius:16px;border:1px solid var(--bd);background:var(--card)}
 .row .pw{flex:none;width:58px;font-size:22px}
 .row .main{background:var(--ac);color:#fff;border-color:var(--ac)}
-.hb{width:100%;margin-top:10px;padding:11px;font-size:14px;border-radius:12px;border:1px solid var(--bd);background:none}
+.row2{display:flex;gap:10px;margin-top:10px}
+.hb{flex:1;width:100%;padding:11px;font-size:14px;border-radius:12px;border:1px solid var(--bd);background:none}
 .hb.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 .note{color:var(--mut);font-size:11px;margin-top:8px;text-align:center}
 </style>
@@ -64,7 +69,7 @@ hr{width:100%;margin:14px 0;border:none;border-top:1px solid var(--bd)}
 <div class="wrap">
 
 <div id="home">
-  <header class="hdr">Mavzular</header>
+  <header class="hdr">Mavzular <a href="https://github.com/ulugbekgozikhonov/ruski/blob/main/REJA.md" target="_blank" rel="noopener">📘 O'quv reja</a></header>
   <button class="cont hidden" id="cont"><span><small>Davom etish</small><b id="contT"></b></span>→</button>
   <div id="cats"><div class="msg">Yuklanmoqda…</div></div>
 </div>
@@ -88,7 +93,10 @@ hr{width:100%;margin:14px 0;border:none;border-top:1px solid var(--bd)}
     <button id="prev">← Oldingi</button>
     <button id="next" class="main">Keyingi →</button>
   </div>
-  <button id="hideBtn" class="hb">👁 Tarjimani yashirish</button>
+  <div class="row2">
+    <button id="hideBtn" class="hb">👁 Tarjimani yashirish</button>
+    <button id="shadowBtn" class="hb">🗣 Takrorlash</button>
+  </div>
   <div class="note" id="note"></div>
 </div>
 
@@ -107,7 +115,7 @@ const audio = new Audio();
 audio.loop = true;
 
 /* --- Progress (telefonda saqlanadi) --- */
-let P = {last: null, seen: {}, rate: 1};
+let P = {last: null, seen: {}, rate: 1, shadow: false};
 try { P = Object.assign(P, JSON.parse(localStorage.getItem('rusP') || '{}')); } catch (e) {}
 function saveP(){ try { localStorage.setItem('rusP', JSON.stringify(P)); } catch (e) {} }
 
@@ -122,10 +130,13 @@ Promise.all([
   renderHome();
 }).catch(() => { $('cats').innerHTML = '<div class="msg">So\'zlarni yuklab bo\'lmadi. Internetni tekshiring.</div>'; });
 
-/* Mavzu uchun tayyor audio (words.json o'zgarib, audio hali yangilanmagan bo'lsa — null) */
+/* Mavzu uchun tayyor audio (words.json o'zgarib, audio hali yangilanmagan bo'lsa — null).
+   Takrorlash rejimida <id>-t: har bir ruscha gapdan keyin qaytarib aytish uchun pauza. */
+const fits = a => a && a.items.length === cat.items.length && a.items.every((x, k) => x.ru === cat.items[k][0]);
 function track(){
-  const a = cat && AUD[cat.id];
-  return a && a.items.length === cat.items.length && a.items.every((x, k) => x.ru === cat.items[k][0]) ? a : null;
+  if (!cat) return null;
+  const t = AUD[cat.id + '-t'], a = AUD[cat.id];
+  return P.shadow && fits(t) ? t : fits(a) ? a : null;
 }
 let loading = null; // {file, promise} — hozir yuklanayotgan audio
 function loadAudio(){
@@ -190,10 +201,11 @@ async function startAuto(){
 async function ttsLoop(my){
   while (playing && my === token){
     const it = cat.items[i];
+    const extra = P.shadow ? 2500 : 0; // takrorlash rejimida qaytarib aytishga vaqt
     await say(it[0]); if (my !== token) return;
-    await wait(1500); if (my !== token) return;
+    await wait(1500 + extra); if (my !== token) return;
     await say(it[2]); if (my !== token) return;
-    await wait(1800); if (my !== token) return;
+    await wait(1800 + extra); if (my !== token) return;
     i = (i + 1) % cat.items.length; show();
   }
 }
@@ -259,16 +271,27 @@ function note(t){ $('note').textContent = t; }
 function renderHome(){
   const cats = $('cats');
   cats.innerHTML = '';
-  CATS.forEach((c, n) => {
-    const pct = Math.round(Math.min(P.seen[c.id] || 0, c.items.length) / c.items.length * 100);
-    const b = document.createElement('button');
-    b.className = 'cat';
-    b.innerHTML = `<div class="ic">${c.icon}</div>
-      <div class="nm">${c.uz}<i>${c.ru}</i></div>
-      <div class="bar"><div style="width:${pct}%"></div></div>`;
-    b.onclick = () => openCat(n, 0);
-    cats.appendChild(b);
+  const groups = [...new Set(CATS.map(c => c.g || "So'zlar"))]
+    .sort((a, b) => (b === 'Gaplashish') - (a === 'Gaplashish'));
+  groups.forEach(g => {
+    const hd = document.createElement('div');
+    hd.className = 'grp'; hd.textContent = g;
+    cats.appendChild(hd);
+    CATS.forEach((c, n) => { if ((c.g || "So'zlar") === g) cats.appendChild(catBtn(c, n)); });
   });
+  renderCont();
+}
+function catBtn(c, n){
+  const pct = Math.round(Math.min(P.seen[c.id] || 0, c.items.length) / c.items.length * 100);
+  const b = document.createElement('button');
+  b.className = 'cat';
+  b.innerHTML = `<div class="ic">${c.icon}</div>${c.dars ? `<span class="ds">${c.dars}-dars</span>` : ''}
+    <div class="nm">${c.uz}<i>${c.ru}</i></div>
+    <div class="bar"><div style="width:${pct}%"></div></div>`;
+  b.onclick = () => openCat(n, 0);
+  return b;
+}
+function renderCont(){
   const ln = P.last ? CATS.findIndex(c => c.id === P.last.id) : -1;
   $('cont').classList.toggle('hidden', ln < 0);
   if (ln >= 0){
@@ -313,6 +336,20 @@ $('hideBtn').onclick = () => {
   $('hideBtn').textContent = hidden ? "👁 Tarjimani ko'rsatish" : '👁 Tarjimani yashirish';
   $('study').classList.toggle('hide', hidden);
 };
+function updShadow(){
+  $('shadowBtn').classList.toggle('on', P.shadow);
+  $('shadowBtn').textContent = P.shadow ? '🗣 Takrorlash: yoniq' : '🗣 Takrorlash';
+}
+$('shadowBtn').onclick = () => {
+  P.shadow = !P.shadow; saveP(); updShadow();
+  const was = playing;
+  if (was) stopAll();
+  Promise.resolve(was ? startAuto() : loadAudio()).then(() => {
+    if (P.shadow) note("Har bir ruscha gapdan keyin pauza: ovoz chiqarib qaytaring.");
+    else if ($('note').textContent.startsWith('Har bir')) note('');
+  });
+};
+updShadow();
 $('card').onclick = () => { if (hidden) $('study').classList.toggle('hide'); };
 if (!RATES.includes(P.rate)) P.rate = 1;
 updSpeed();
