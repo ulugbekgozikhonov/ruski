@@ -122,13 +122,13 @@ const plain = s => s.replace(/'/g, '');                                       //
 const stress = s => plain(s.replace(/([аеиоуыэюяАЕИОУЫЭЮЯ])'/g, '$1́')); // ба'бушка -> ба́бушка
 const RATES = [0.8, 1, 1.25];
 
-let CATS = [], AUD = {}, cat = null, catN = 0, i = 0, hidden = false;
+let CATS = [], AUD = {}, cat = null, i = 0, hidden = false;
 let playing = false, stopAt = null, token = 0, loaded = null, ruVoice = null;
 const audio = new Audio();
 audio.loop = true;
 
 /* --- Progress (telefonda saqlanadi) --- */
-let P = {last: null, seen: {}, rate: 1, shadow: false};
+let P = {last: null, seen: {}, pos: {}, rate: 1, shadow: false};
 try { P = Object.assign(P, JSON.parse(localStorage.getItem('rusP') || '{}')); } catch (e) {}
 function saveP(){ try { localStorage.setItem('rusP', JSON.stringify(P)); } catch (e) {} }
 
@@ -140,6 +140,7 @@ Promise.all([
   CATS = c; AUD = a;
   // eski versiyada progress mavzu raqami bilan saqlangan edi
   CATS.forEach((x, n) => { if (P.seen[n] && !P.seen[x.id]) { P.seen[x.id] = P.seen[n]; delete P.seen[n]; } });
+  if (P.last && P.pos[P.last.id] === undefined) P.pos[P.last.id] = P.last.i;
   route(history.state || {v: 'home'});
 }).catch(() => { $('secs').innerHTML = '<div class="msg">So\'zlarni yuklab bo\'lmadi. Internetni tekshiring.</div>'; });
 
@@ -326,7 +327,7 @@ function route(st){
   $('study').classList.toggle('hidden', v !== 'study');
   if (v === 'home') renderHome();
   if (v === 'group') renderGroup(st.g);
-  if (v === 'study') startCat(st.n, st.i);
+  if (v === 'study') startCat(st.n);
   scrollTo(0, 0);
 }
 function nav(st){ history.pushState(st, ''); route(st); }
@@ -340,7 +341,7 @@ function catBtn(c, n){
   b.innerHTML = `<div class="ic">${c.icon}</div>${c.dars ? `<span class="ds">${c.dars}-dars</span>` : ''}
     <div class="nm">${c.uz}<i>${c.ru}</i></div>
     <div class="bar"><div style="width:${pct}%"></div></div>`;
-  b.onclick = () => openCat(n, 0);
+  b.onclick = () => openCat(n);
   return b;
 }
 function renderCont(){
@@ -350,15 +351,14 @@ function renderCont(){
     const c = CATS[ln], k = Math.min(P.last.i, c.items.length - 1);
     $('contT').textContent = `${c.uz} · ${k + 1}/${c.items.length}`;
     $('cont').onclick = () => { // orqaga bosilganda shu mavzu bo'limiga qaytadi
-      history.pushState({v: 'group', g: grpOf(c)}, ''); openCat(ln, k);
+      history.pushState({v: 'group', g: grpOf(c)}, ''); openCat(ln);
     };
   }
 }
-function openCat(n, start){ nav({v: 'study', n, i: start || 0}); }
-function startCat(n, start){
-  // orqaga-oldinga bilan shu mavzuga qaytilsa, oxirgi joyidan davom etadi
-  const same = cat === CATS[n];
-  cat = CATS[n]; catN = n; i = same ? i : Math.min(start || 0, cat.items.length - 1);
+function openCat(n){ nav({v: 'study', n}); }
+function startCat(n){
+  cat = CATS[n]; // har bir mavzu o'zi to'xtagan joydan davom etadi
+  i = Math.max(0, Math.min(P.pos[cat.id] || 0, cat.items.length - 1));
   note(!track() && !ruVoice ? "Bu mavzu audiosi hali tayyor emas, qurilmada rus ovozi ham topilmadi." : '');
   show();
   loadAudio(); // oldindan yuklab qo'yamiz: «Tinglash» bosilganda darhol boshlansin
@@ -369,7 +369,7 @@ function show(){
   $('sr').textContent = stress(sr); $('su').textContent = '(' + su + ')';
   $('count').textContent = `${i + 1} / ${cat.items.length}`;
   $('study').classList.toggle('hide', hidden);
-  P.last = {id: cat.id, i};
+  P.last = {id: cat.id, i}; P.pos[cat.id] = i;
   P.seen[cat.id] = Math.max(P.seen[cat.id] || 0, i + 1);
   saveP(); updMedia();
 }

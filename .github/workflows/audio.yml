@@ -48,3 +48,6 @@ jobs:
           # run davomida main oldinga ketgan bo'lishi mumkin
           for n in 1 2 3; do git pull --rebase -q origin main && git push && exit 0; sleep 5; done
           exit 1
+      # hisobot: tushib qolgan yoki chala o'qilgan ovoz bormi
+      - run: python tools/check_audio.py
+        continue-on-error: true

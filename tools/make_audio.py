@@ -55,8 +55,21 @@ def speakable(text, lang):
     text = re.sub(r"\s+([?!.,])", r"\1", text)
     if lang == "ru":
         return text.replace("'", "")  # urg'u belgisi faqat ekran uchun
+    text = re.sub(r"\s*\(ayol:[^)]*\)", "", text)  # "(ayol: согласна)" — faqat ekran uchun
     text = re.sub(r"([oOgG])'", "\\1\u02bb", text)  # o' g' -> oʻ gʻ
     return text.replace("'", "\u02bc")  # tutuq belgisi
+
+
+def decode(mp3):
+    return subprocess.run(
+        [ffmpeg(), "-v", "error", "-i", "pipe:0", "-f", "s16le", "-ac", "1", "-ar", str(SR), "pipe:1"],
+        input=mp3, capture_output=True, check=True,
+    ).stdout
+
+
+def too_short(pcm, text):
+    """Matn uzunligiga nisbatan g'ayritabiiy qisqa — xizmat audioni chala qaytargan."""
+    return len(pcm) / (2 * SR) < 0.15 + 0.03 * len(text)
 
 
 async def tts(text, lang):
@@ -66,32 +79,37 @@ async def tts(text, lang):
     if path.exists():
         return path.read_bytes()
     base = int(rate.rstrip("%"))
-    mp3 = b""
+    best = None  # eng uzun (eng to'liq) javob
     for attempt in range(10):
-        # Xizmat ba'zan bo'sh javob qaytaradi (tasodifan, matnga bog'liq emas):
+        # Xizmat ba'zan bo'sh yoki chala javob qaytaradi (tasodifan, matnga bog'liq emas):
         # tezlikni ±1–3% o'zgartirib qayta so'raymiz — eshitganda farqi sezilmaydi.
         shift = (0, 1, -1, 2, -2, 3, -3)[attempt % 7]
+        mp3 = b""
         try:
             async for chunk in edge_tts.Communicate(text, voice, rate=f"{base + shift:+d}%").stream():
                 if chunk["type"] == "audio":
                     mp3 += chunk["data"]
-            if mp3:
-                break
-            await asyncio.sleep(3 + attempt)
         except edge_tts.exceptions.NoAudioReceived:
             mp3 = b""
-            await asyncio.sleep(3 + attempt)
         except Exception:  # ko'p so'rovda Microsoft vaqtincha 403 qaytaradi
-            mp3 = b""
             await asyncio.sleep(min(15 * 2 ** attempt, 240))
-    if not mp3:
+            continue
+        if mp3:
+            pcm = decode(mp3)
+            if best is None or len(pcm) > len(best):
+                best = pcm
+            if not too_short(trim(pcm), text):
+                break
+            print(f"  ? chala audio, qayta so'raladi ({lang}): {text}")
+        await asyncio.sleep(3 + attempt)
+    if best is None:
         print(f"  ! TTS ishlamadi ({lang}): {text}")
         return None
+    pcm = best
     await asyncio.sleep(0.8)
-    pcm = subprocess.run(
-        [ffmpeg(), "-v", "error", "-i", "pipe:0", "-f", "s16le", "-ac", "1", "-ar", str(SR), "pipe:1"],
-        input=mp3, capture_output=True, check=True,
-    ).stdout
+    if too_short(trim(pcm), text):
+        print(f"  ! audio chala ({lang}): {text}")
+        return pcm  # keshga yozilmaydi: keyingi urinishda qayta so'raladi
     CACHE.mkdir(exist_ok=True)
     tmp = path.with_suffix(".tmp")  # run to'xtatilsa chala fayl keshga tushmasin
     tmp.write_bytes(pcm)
@@ -133,11 +151,11 @@ async def build(cat, plan):
         for n, (lang, col, pause) in enumerate(plan):
             if lang == "uz" and "u" not in mark:
                 mark["u"] = now()
-            raw = await tts(speakable(item[col], lang), lang)
-            if raw is None:
+            text = speakable(item[col], lang)
+            raw = await tts(text, lang)
+            clip = trim(raw) if raw is not None else hush(0.5)
+            if raw is None or too_short(clip, text):
                 complete = False
-                raw = hush(0.5)
-            clip = trim(raw)
             pcm += clip
             if pause == REPEAT:
                 pause = len(clip) / (2 * SR) * 1.2 + 1.0
