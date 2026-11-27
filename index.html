@@ -123,9 +123,8 @@ const stress = s => plain(s.replace(/([аеиоуыэюяАЕИОУЫЭЮЯ])'/g
 const RATES = [0.8, 1, 1.25];
 
 let CATS = [], AUD = {}, cat = null, i = 0, hidden = false;
-let playing = false, stopAt = null, token = 0, loaded = null, ruVoice = null;
+let playing = false, stopAt = null, token = 0, ruVoice = null;
 const audio = new Audio();
-audio.loop = true;
 
 /* --- Progress (telefonda saqlanadi) --- */
 let P = {last: null, seen: {}, pos: {}, rate: 1, shadow: false};
@@ -138,6 +137,7 @@ Promise.all([
   fetch('audio/index.json').then(r => r.json()).catch(() => ({}))
 ]).then(([c, a]) => {
   CATS = c; AUD = a;
+  Object.values(AUD).forEach(x => { if (!x.chunks){ x.chunks = [{file: x.file}]; x.items.forEach(m => m.c = 0); } }); // eski format
   // eski versiyada progress mavzu raqami bilan saqlangan edi
   CATS.forEach((x, n) => { if (P.seen[n] && !P.seen[x.id]) { P.seen[x.id] = P.seen[n]; delete P.seen[n]; } });
   if (P.last && P.pos[P.last.id] === undefined) P.pos[P.last.id] = P.last.i;
@@ -145,38 +145,54 @@ Promise.all([
 }).catch(() => { $('secs').innerHTML = '<div class="msg">So\'zlarni yuklab bo\'lmadi. Internetni tekshiring.</div>'; });
 
 /* Mavzu uchun tayyor audio (words.json o'zgarib, audio hali yangilanmagan bo'lsa — null).
-   Takrorlash rejimida <id>-t: har bir ruscha gapdan keyin qaytarib aytish uchun pauza. */
+   Audio ~20 so'zlik bo'laklarda (metroda tez yuklansin): items[k].c — bo'lak raqami,
+   t/w/u — o'sha bo'lak boshidan vaqt. Takrorlash rejimida <id>-t: ruscha gapdan keyin pauza. */
 const fits = a => a && a.items.length === cat.items.length && a.items.every((x, k) => x.ru === cat.items[k][0]);
 function track(){
   if (!cat) return null;
   const t = AUD[cat.id + '-t'], a = AUD[cat.id];
   return P.shadow && fits(t) ? t : fits(a) ? a : null;
 }
-let loading = null; // {file, promise} — hozir yuklanayotgan audio
-function loadAudio(){
-  const a = track();
-  if (!a || loaded === a.file) return Promise.resolve(!!a);
-  if (loading && loading.file === a.file) return loading.promise;
-  note('Audio yuklanmoqda…');
-  const promise = (async () => {
+const chunkFile = (a, k) => a.chunks[a.items[k].c].file;
+
+const urls = new Map(); // bo'lak fayli -> Promise<blob URL | null>
+function getChunk(file){
+  if (!urls.has(file)) urls.set(file, (async () => {
     try {
-      const r = await fetch(a.file);
+      const r = await fetch(file);
       if (!r.ok) throw 0;
-      const blob = await r.blob();
-      const now = track();
-      if (!now || now.file !== a.file) return false; // bu orada boshqa mavzu ochildi
-      if (audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
-      audio.src = URL.createObjectURL(blob); loaded = a.file; note('');
-      return true;
-    } catch (e) {
-      if (track() === a) note("Audio yuklanmadi — telefon ovozidan foydalaniladi.");
-      return false;
-    } finally { if (loading && loading.file === a.file) loading = null; }
-  })();
-  loading = {file: a.file, promise};
-  return promise;
+      return URL.createObjectURL(await r.blob());
+    } catch (e) { urls.delete(file); return null; }
+  })());
+  return urls.get(file);
 }
-const ready = () => { const a = track(); return a && loaded === a.file ? a : null; };
+function keepOnly(files){ // xotirada faqat hozirgi va keyingi bo'lak qoladi
+  for (const [f, pr] of urls) if (!files.includes(f)){ urls.delete(f); pr.then(u => u && URL.revokeObjectURL(u)); }
+}
+function prefetch(){ const a = track(); if (a) getChunk(chunkFile(a, i)); }
+
+let loaded = null;   // audio.src dagi bo'lak
+let ignorePause = 0; // bo'lak almashganda o'zimiz chaqirgan pause — foydalanuvchiniki emas
+const ready = () => { const a = track(); return a && loaded === chunkFile(a, i) ? a : null; };
+/* k-so'z boshiga o'tadi (kerak bo'lsa bo'lagini yuklab). 'ok' | 'fail' | 'stale' */
+async function seek(k, my){
+  const a = track(); if (!a) return 'fail';
+  const file = chunkFile(a, k), c = a.items[k].c;
+  const next = a.chunks[(c + 1) % a.chunks.length].file;
+  if (loaded !== file){
+    note('Audio yuklanmoqda…');
+    const url = await getChunk(file);
+    if (my !== token || track() !== a) return 'stale';
+    if (!url){ note("Audio yuklanmadi — telefon ovozidan foydalaniladi."); return 'fail'; }
+    if (!audio.paused){ ignorePause++; audio.pause(); }
+    audio.src = url; loaded = file; note('');
+  }
+  audio.currentTime = a.items[k].t;
+  audio.playbackRate = P.rate;
+  keepOnly([file, next]);
+  getChunk(next); // keyingi bo'lak oldindan: ekran o'chiq bo'lsa ham uzilmasdan o'tadi
+  return 'ok';
+}
 
 /* --- Telefon ovozi (audio yo'q bo'lsa zaxira) --- */
 function pickVoice(){
@@ -199,18 +215,20 @@ const wait = ms => new Promise(r => setTimeout(r, ms / P.rate));
 function stopAll(){
   playing = false; stopAt = null; token++;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  audio.pause();
+  if (!audio.paused){ ignorePause++; audio.pause(); } // uning pause hodisasi keyingi ijroni to'xtatmasin
   updAuto();
 }
 async function startAuto(){
-  stopAt = null; token++;
+  stopAt = null; const my = ++token;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   playing = true; updAuto();
-  if (!ready() && !(await loadAudio())) return ttsLoop(token);
-  if (!playing) return;
-  audio.currentTime = ready().items[i].t;
-  audio.playbackRate = P.rate;
-  audio.play().catch(() => { playing = false; updAuto(); note('Yana bir marta bosing.'); });
+  const r = await seek(i, my);
+  if (my !== token || !playing || r === 'stale') return;
+  if (r === 'fail') return ttsLoop(my);
+  audio.play().catch(e => {
+    if (e.name === 'AbortError' || my !== token) return; // bu orada boshqa so'zga o'tildi
+    playing = false; updAuto(); note('Yana bir marta bosing.');
+  });
 }
 async function ttsLoop(my){
   while (playing && my === token){
@@ -223,10 +241,11 @@ async function ttsLoop(my){
     i = (i + 1) % cat.items.length; show();
   }
 }
-function playWord(){
-  stopAll();
-  const a = ready();
-  if (a){ audio.currentTime = a.items[i].t; stopAt = a.items[i].w; audio.playbackRate = P.rate; audio.play().catch(() => {}); }
+async function playWord(){
+  stopAll(); const my = token;
+  const r = await seek(i, my);
+  if (my !== token) return;
+  if (r === 'ok'){ stopAt = track().items[i].w; audio.play().catch(() => {}); }
   else say(cat.items[i][0]);
 }
 audio.ontimeupdate = () => {
@@ -234,13 +253,27 @@ audio.ontimeupdate = () => {
   const t = audio.currentTime;
   if (stopAt !== null){ if (t >= stopAt){ audio.pause(); stopAt = null; } return; }
   if (!playing) return;
-  let k = 0;
-  while (k + 1 < a.items.length && a.items[k + 1].t <= t) k++;
+  const c = a.items[i].c; // faqat shu bo'lak ichida
+  let k = i;
+  while (k > 0 && a.items[k - 1].c === c && a.items[k].t > t) k--;
+  while (k + 1 < a.items.length && a.items[k + 1].c === c && a.items[k + 1].t <= t) k++;
   if (k !== i){ i = k; show(); }
   if (hidden) $('study').classList.toggle('hide', t < a.items[i].u); // o'zbekchasi o'qilganda ochiladi
 };
+// bo'lak tugadi — keyingisi (oxirgisidan keyin mavzu boshidan)
+audio.onended = () => {
+  const a = ready(); if (!a || !playing || stopAt !== null) return;
+  const nc = (a.items[i].c + 1) % a.chunks.length;
+  i = a.items.findIndex(x => x.c === nc); show();
+  startAuto();
+};
 // quloqchin/qulflangan ekrandan to'xtatilsa yoki davom ettirilsa
-audio.onpause = () => { if (playing && stopAt === null && ready()){ playing = false; updAuto(); } };
+audio.onpause = () => {
+  if (ignorePause){ ignorePause--; return; }
+  if (audio.ended) return; // bo'lak oxiri: onended davom ettiradi
+  if (playing && stopAt === null && loaded){ playing = false; updAuto(); }
+};
+audio.onplaying = () => { ignorePause = 0; };
 audio.onplay = () => { if (!playing && stopAt === null){ playing = true; updAuto(); } };
 
 // saytdan chiqilsa (boshqa ilova, yopilgan tab yoki o'chgan ekran) — to'xtaydi
@@ -361,7 +394,7 @@ function startCat(n){
   i = Math.max(0, Math.min(P.pos[cat.id] || 0, cat.items.length - 1));
   note(!track() && !ruVoice ? "Bu mavzu audiosi hali tayyor emas, qurilmada rus ovozi ham topilmadi." : '');
   show();
-  loadAudio(); // oldindan yuklab qo'yamiz: «Tinglash» bosilganda darhol boshlansin
+  prefetch(); // oldindan yuklab qo'yamiz: «Tinglash» bosilganda darhol boshlansin
 }
 function show(){
   const [ru, uz, sr, su] = cat.items[i];
@@ -378,7 +411,7 @@ function go(d){
   show();
   if (playing) startAuto(); else stopAll();
 }
-function updSpeed(){ $('speed').textContent = P.rate + '×'; audio.playbackRate = P.rate; }
+function updSpeed(){ $('speed').textContent = P.rate + '×'; audio.playbackRate = audio.defaultPlaybackRate = P.rate; }
 
 /* --- Tugmalar --- */
 $('back').onclick = back;
@@ -401,7 +434,7 @@ $('shadowBtn').onclick = () => {
   P.shadow = !P.shadow; saveP(); updShadow();
   const was = playing;
   if (was) stopAll();
-  Promise.resolve(was ? startAuto() : loadAudio()).then(() => {
+  Promise.resolve(was ? startAuto() : prefetch()).then(() => {
     if (P.shadow) note("Har bir ruscha gapdan keyin pauza: ovoz chiqarib qaytaring.");
     else if ($('note').textContent.startsWith('Har bir')) note('');
   });

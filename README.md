@@ -23,7 +23,7 @@ Rus tili so'zlarini yo'lda tinglab yodlash uchun sayt: https://ulugbekgozikhonov
 - Urg'u: urg'uli unlidan keyin `'` qo'ying — `ба'бушка` saytda `ба́бушка` bo'lib chiqadi.
 - `id` — lotin harflarida, takrorlanmasin (audio fayl nomi shundan).
 
-Push qilingach GitHub Actions audioni o'zi yaratadi (oddiy va takrorlash rejimi uchun ikkita fayl; yangi mavzu bo'lsa 10–20 daqiqa). Shu orada sayt telefon ovozidan foydalanadi.
+Push qilingach GitHub Actions audioni o'zi yaratadi: oddiy va takrorlash rejimi uchun, ~20 so'zlik bo'laklarda (metroda tez yuklansin). Yangi mavzu bo'lsa 10–30 daqiqa; oxirida `tools/check_audio.py` tushib qolgan ovoz yo'qligini tekshiradi. Shu orada sayt telefon ovozidan foydalanadi.
 
 Qo'lda yaratish:
 

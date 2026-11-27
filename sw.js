@@ -1,6 +1,6 @@
 /* Oflayn ishlash: sahifa va so'zlar avval tarmoqdan (yangilanish uchun), bo'lmasa keshdan.
    Audio fayllar ?v=<hash> bilan keladi — ular o'zgarmaydi, shuning uchun avval keshdan. */
-const CACHE = 'ruski-v2';
+const CACHE = 'ruski-v3'; // v3: audio bo'laklarga bo'lindi — eski butun fayllar keshdan tozalanadi
 const CORE = ['./', 'index.html', 'words.json', 'audio/index.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

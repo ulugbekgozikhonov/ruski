@@ -48,10 +48,13 @@ def main():
             continue
         if a["src"] == "partial":
             print(f"{cid}: TO'LIQ EMAS (keyingi run to'ldiradi)")
-        x = array.array("h", m.decode((m.AUDIO / f"{cid}.mp3").read_bytes()))
-        loud = [max(map(abs, x[i:i + WIN])) > 400 for i in range(0, len(x) - WIN, WIN)]
+        louds = []
+        for ch in a["chunks"]:
+            x = array.array("h", m.decode((m.ROOT / ch["file"].split("?")[0]).read_bytes()))
+            louds.append([max(map(abs, x[i:i + WIN])) > 400 for i in range(0, len(x) - WIN, WIN)])
         for k, mark in enumerate(a["items"]):
-            end = round(a["items"][k + 1]["t"] * 100) if k + 1 < len(a["items"]) else len(loud)
+            loud, nxt = louds[mark["c"]], a["items"][k + 1] if k + 1 < len(a["items"]) else None
+            end = round(nxt["t"] * 100) if nxt and nxt["c"] == mark["c"] else len(loud)
             segs = segments(loud, round(mark["t"] * 100), end)
             it = cat["items"][k]
             texts = [m.speakable(it[c], lang) for lang, c in (("ru", 0), ("uz", 1), ("ru", 2), ("uz", 3))]

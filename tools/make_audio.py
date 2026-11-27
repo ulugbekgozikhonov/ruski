@@ -1,10 +1,11 @@
 """words.json dan har bir mavzu uchun tinglash audiosini yaratadi.
 
 Har bir so'z uchun tartib (PLAN): rus so'zi -> pauza (eslashga vaqt) -> o'zbekcha ->
-rus misol gapi -> uning tarjimasi. Natija: audio/<id>.mp3 va
-audio/index.json (sayt qaysi so'z qachon o'qilishini shundan biladi).
+rus misol gapi -> uning tarjimasi. Natija: audio/<id>.<n>.mp3 bo'laklari
+(har biri ~20 so'z: metroda ham tez yuklanadi) va audio/index.json (sayt qaysi
+so'z qaysi bo'lakda, qachon o'qilishini shundan biladi).
 
-Takrorlash rejimi (audio/<id>-t.mp3): har bir ruscha klipdan keyin uning
+Takrorlash rejimi (audio/<id>-t.<n>.mp3): har bir ruscha klipdan keyin uning
 uzunligiga yarasha pauza — tinglovchi shu vaqtda ovoz chiqarib qaytaradi.
 
 O'zgarmagan mavzular qayta yaratilmaydi.
@@ -37,7 +38,8 @@ MODES = {
     "": [("ru", 0, 1.2), ("uz", 1, 0.8), ("ru", 2, 0.6), ("uz", 3, 1.6)],
     "-t": [("ru", 0, REPEAT), ("uz", 1, 0.8), ("ru", 2, REPEAT), ("uz", 3, 1.6)],
 }
-VERSION = "5"  # VOICES yoki MODES o'zgarsa oshiring: hamma audio qayta yaratiladi
+CHUNK = 20  # bo'lakdagi so'zlar soni (ko'pi bilan); bo'laklar teng taqsimlanadi
+VERSION = "6"  # VOICES, MODES yoki CHUNK o'zgarsa oshiring: hamma audio qayta yaratiladi
 
 
 def ffmpeg():
@@ -139,15 +141,23 @@ def hush(seconds):
     return (_HUSH * (n // len(_HUSH) + 1))[:n]
 
 
-async def build(cat, plan):
-    """(mp3, marks, to'liqmi). O'qilmagan klip o'rnida qisqa pauza qoladi."""
+def chunks(items):
+    """So'zlarni ~teng bo'laklarga bo'ladi: 83 ta -> 17+17+17+16+16 (oxirida 3 ta qolib ketmasin)."""
+    n = -(-len(items) // CHUNK)
+    size = -(-len(items) // n)
+    return [items[i:i + size] for i in range(0, len(items), size)]
+
+
+async def build(items, plan, c):
+    """Bitta bo'lak: (mp3, marks, to'liqmi). Vaqtlar bo'lak boshidan.
+    O'qilmagan klip o'rnida qisqa pauza qoladi."""
     pcm = bytearray()
     marks = []
     complete = True
     now = lambda: round(len(pcm) / (2 * SR), 2)
     pcm += hush(0.3)
-    for item in cat["items"]:
-        mark = {"ru": item[0], "t": now()}
+    for item in items:
+        mark = {"ru": item[0], "c": c, "t": now()}
         for n, (lang, col, pause) in enumerate(plan):
             if lang == "uz" and "u" not in mark:
                 mark["u"] = now()
@@ -181,7 +191,9 @@ def main():
     for cat, suffix in [(c, m) for c in cats for m in MODES]:
         cid = cat["id"] + suffix
         src = hashlib.sha1((VERSION + suffix + json.dumps(cat["items"], ensure_ascii=False)).encode()).hexdigest()[:12]
-        if old.get(cid, {}).get("src") == src and (AUDIO / f"{cid}.mp3").exists():
+        prev = old.get(cid, {})
+        if prev.get("src") == src and prev.get("chunks") and all(
+                (ROOT / c["file"].split("?")[0]).exists() for c in prev["chunks"]):
             new[cid] = old[cid]
             print(f"{cid}: o'zgarmagan")
         else:
@@ -194,20 +206,26 @@ def main():
             time.sleep(60)
         left = []
         for cat, suffix, cid, src in todo:
-            mp3, marks, complete = asyncio.run(build(cat, MODES[suffix]))
-            mp3_path = AUDIO / f"{cid}.mp3"
-            mp3_path.write_bytes(mp3)
-            version = hashlib.sha1(mp3).hexdigest()[:10]
-            new[cid] = {"file": f"audio/{cid}.mp3?v={version}", "src": src if complete else "partial", "items": marks}
-            print(f"{cid}: {len(marks)} ta so'z, {marks[-1]['t'] / 60:.1f} daqiqa, {len(mp3) // 1024} KB"
+            files, marks, complete, size, length = [], [], True, 0, 0
+            for c, part in enumerate(chunks(cat["items"])):
+                mp3, m, ok = asyncio.run(build(part, MODES[suffix], c))
+                (AUDIO / f"{cid}.{c}.mp3").write_bytes(mp3)
+                files.append({"file": f"audio/{cid}.{c}.mp3?v={hashlib.sha1(mp3).hexdigest()[:10]}"})
+                marks += m
+                complete &= ok
+                size += len(mp3)
+                length += m[-1]["t"]
+            new[cid] = {"src": src if complete else "partial", "chunks": files, "items": marks}
+            print(f"{cid}: {len(marks)} ta so'z, {len(files)} bo'lak, ~{length / 60:.0f} daqiqa, {size // 1024} KB"
                   + ("" if complete else " — TO'LIQ EMAS"))
             if not complete:
                 left.append((cat, suffix, cid, src))
         todo = left
         if not todo:
             break
+    keep = {c["file"].split("?")[0].removeprefix("audio/") for a in new.values() for c in a.get("chunks", [])}
     for f in AUDIO.glob("*.mp3"):
-        if f.stem not in new:
+        if f.name not in keep:
             f.unlink()
     index_path.write_text(json.dumps(new, ensure_ascii=False, indent=1) + "\n", "utf-8", newline="\n")
 
