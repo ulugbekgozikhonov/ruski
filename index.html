@@ -311,6 +311,9 @@ if ('mediaSession' in navigator){
   const h = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} };
   h('play', () => cat && startAuto()); h('pause', stopAll); h('stop', stopAll);
   h('nexttrack', () => cat && go(1)); h('previoustrack', () => cat && go(-1));
+  // Sahifa o'zi bermasa, Chrome bildirishnomaga o'zining "±10 s" tugmalarini qo'yadi (ba'zan
+  // "keyingi" o'rniga) — ular ham so'z bo'yicha yursin: 10 s emas, keyingi/oldingi so'z.
+  h('seekforward', () => cat && go(1)); h('seekbackward', () => cat && go(-1));
 }
 
 /* --- Ko'rinish --- */
