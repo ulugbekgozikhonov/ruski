@@ -1,5 +1,7 @@
-"""Tayyor audioni tekshiradi: har bir so'zda 4 ta ovoz bo'lagi (so'z, tarjima, misol,
-misol tarjimasi) bormi va hech biri g'ayritabiiy qisqa (chala) emasmi.
+"""Tayyor audioni tekshiradi: har bir so'zning 4 ta klipi (rus so'zi, tarjima, misol, misol
+tarjimasi) o'z joyida ovozli va matn uzunligiga yarasha uzunlikdami. Klip chegaralari
+index.json dan (t, w, u, s). Bo'laklarni pauza bo'yicha sanash ishonchsiz: dialoglardagi tire
+("— Как дела? — Хорошо") joyida ovozning o'zi ~1 s pauza qiladi.
 
     python tools/check_audio.py            # hamma mavzular
     python tools/check_audio.py kafe oila  # faqat shular
@@ -13,25 +15,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import make_audio as m  # noqa: E402
 
-WIN = m.SR // 100  # 10 ms
-GAP = 45           # 0.45 s dan uzun jimlik — bo'laklar orasidagi pauza (eng qisqasi 0.6 s)
-
-
-def segments(loud, start, end):
-    segs, cur, gap = [], None, 0
-    for j in range(start, end):
-        if loud[j]:
-            if cur is None:
-                cur = [j, j]
-            cur[1], gap = j, 0
-        elif cur is not None:
-            gap += 1
-            if gap > GAP:
-                segs.append(cur)
-                cur = None
-    if cur:
-        segs.append(cur)
-    return segs
+WIN = m.SR // 100   # 10 ms
+MIN_RATIO = 0.02    # klipdagi ovozli soniya / harf; normal ~0.06, tushib qolgan klip ~0
 
 
 def main():
@@ -53,20 +38,23 @@ def main():
             x = array.array("h", m.decode((m.ROOT / ch["file"].split("?")[0]).read_bytes()))
             louds.append([max(map(abs, x[i:i + WIN])) > 400 for i in range(0, len(x) - WIN, WIN)])
         for k, mark in enumerate(a["items"]):
-            loud, nxt = louds[mark["c"]], a["items"][k + 1] if k + 1 < len(a["items"]) else None
-            end = round(nxt["t"] * 100) if nxt and nxt["c"] == mark["c"] else len(loud)
-            segs = segments(loud, round(mark["t"] * 100), end)
+            loud = louds[mark["c"]]
+            nxt = a["items"][k + 1] if k + 1 < len(a["items"]) else None
+            start, end = round(mark["t"] * 100), (round(nxt["t"] * 100) if nxt and nxt["c"] == mark["c"] else len(loud))
             it = cat["items"][k]
-            texts = [m.speakable(it[c], lang) for lang, c in (("ru", 0), ("uz", 1), ("ru", 2), ("uz", 3))]
-            durs = [(b - s + 1) / 100 for s, b in segs]
+            names = ("rus so'zi", "tarjima", "misol", "misol tarjimasi")
+            if "s" not in mark:
+                print(f"{cid}: eski format (klip chegaralari yo'q) — VERSION oshirib qayta yarating")
+                break
+            bounds = [start, round(mark["w"] * 100), round(mark["u"] * 100)] + [round(x * 100) for x in mark["s"]] + [end]
+            spans = [(bounds[0], bounds[1]), (bounds[2], bounds[3]), (bounds[3], bounds[4]), (bounds[4], bounds[5])]
             msg = None
-            if len(segs) != 4:
-                msg = f"{len(segs)} ta ovoz bo'lagi, 4 ta bo'lishi kerak {durs}"
-            else:
-                for d, t in zip(durs, texts):
-                    if d < 0.15 + 0.03 * len(t):
-                        msg = f"chala: {d:.2f}s «{t}»"
-                        break
+            for name, (lo, hi), (lang, col) in zip(names, spans, (("ru", 0), ("uz", 1), ("ru", 2), ("uz", 3))):
+                text = m.speakable(it[col], lang)
+                voiced = sum(loud[lo:hi]) / 100
+                if voiced < max(0.1, MIN_RATIO * len(text)):
+                    msg = f"{name} ovozsiz yoki chala ({voiced:.2f}s, «{text}»)"
+                    break
             if msg:
                 bad += 1
                 print(f"{cid} #{k + 1} {m.speakable(it[0], 'ru')}: {msg}")

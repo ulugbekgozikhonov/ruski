@@ -39,7 +39,7 @@ MODES = {
     "-t": [("ru", 0, REPEAT), ("uz", 1, 0.8), ("ru", 2, REPEAT), ("uz", 3, 1.6)],
 }
 CHUNK = 20  # bo'lakdagi so'zlar soni (ko'pi bilan); bo'laklar teng taqsimlanadi
-VERSION = "6"  # VOICES, MODES yoki CHUNK o'zgarsa oshiring: hamma audio qayta yaratiladi
+VERSION = "7"  # VOICES, MODES yoki CHUNK o'zgarsa oshiring: hamma audio qayta yaratiladi
 
 
 def ffmpeg():
@@ -124,8 +124,10 @@ def trim(pcm, keep=0.06, threshold=400):
     a = array.array("h", pcm)
     if not a:
         return pcm
-    start = next((i for i, x in enumerate(a) if abs(x) > threshold), 0)
-    end = next((i for i in range(len(a) - 1, -1, -1) if abs(a[i]) > threshold), len(a) - 1)
+    start = next((i for i, x in enumerate(a) if abs(x) > threshold), None)
+    if start is None:
+        return b""  # ovoz umuman yo'q — too_short() buni chala deb topadi
+    end = next(i for i in range(len(a) - 1, -1, -1) if abs(a[i]) > threshold)
     pad = int(SR * keep)
     return a[max(0, start - pad):min(len(a), end + pad)].tobytes()
 
@@ -161,6 +163,8 @@ async def build(items, plan, c):
         for n, (lang, col, pause) in enumerate(plan):
             if lang == "uz" and "u" not in mark:
                 mark["u"] = now()
+            if n >= 2:  # misol gapi va uning tarjimasi boshlanishi (check_audio har klipni aniq tekshirsin)
+                mark.setdefault("s", []).append(now())
             text = speakable(item[col], lang)
             raw = await tts(text, lang)
             clip = trim(raw) if raw is not None else hush(0.5)
